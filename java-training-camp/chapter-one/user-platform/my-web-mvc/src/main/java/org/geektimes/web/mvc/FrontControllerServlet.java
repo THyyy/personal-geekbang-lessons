@@ -23,15 +23,9 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 
-import static java.util.Arrays.asList;
 import static org.apache.commons.lang.StringUtils.substringAfter;
 
 public class FrontControllerServlet extends HttpServlet {
-
-    /**
-     * 请求路径和 Controller 的映射关系缓存
-     */
-    private Map<String, Controller> controllersMapping = new HashMap<>();
 
     /**
      * 请求路径和 {@link HandlerMethodInfo} 映射关系缓存
@@ -67,8 +61,7 @@ public class FrontControllerServlet extends HttpServlet {
                     // 此时重新赋值不会导致路径拼接错误
                     requestPath = pathFromClass.value() + pathFromMethod.value();
                     handleMethodInfoMapping.put(requestPath,
-                            new HandlerMethodInfo(requestPath, method, supportedHttpMethods));
-                    controllersMapping.put(requestPath, controller);
+                            new HandlerMethodInfo(requestPath, method, supportedHttpMethods, controller));
                 }
             }
         }
@@ -119,48 +112,45 @@ public class FrontControllerServlet extends HttpServlet {
         String requestMappingPath = substringAfter(requestURI,
                 StringUtils.replace(prefixPath, "//", "/"));
         // 映射到 Controller
-        Controller controller = controllersMapping.get(requestMappingPath);
-
-        if (controller != null) {
-            HandlerMethodInfo handlerMethodInfo = handleMethodInfoMapping.get(requestMappingPath);
-            try {
-                if (handlerMethodInfo != null) {
-                    String httpMethod = request.getMethod();
-                    if (!handlerMethodInfo.getSupportedHttpMethods().contains(httpMethod)) {
-                        // HTTP 方法不支持
-                        response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                        return;
-                    }
-
-                    Method handlerMethod = handlerMethodInfo.getHandlerMethod();
-                    if (controller instanceof PageController) {
-                        PageController pageController = PageController.class.cast(controller);
-                        //String viewPath = pageController.execute(request, response);
-                        // 修改成反射的形式，支持多个方法
-                        String viewPath = (String) handlerMethod.invoke(pageController, request, response);
-                        // 页面请求 forward
-                        // request -> RequestDispatcher forward
-                        // RequestDispatcher requestDispatcher = request.getRequestDispatcher(viewPath);
-                        // ServletContext -> RequestDispatcher forward
-                        // ServletContext -> RequestDispatcher 必须以 "/" 开头
-                        ServletContext servletContext = request.getServletContext();
-                        if (!viewPath.startsWith("/")) {
-                            viewPath = "/" + viewPath;
-                        }
-                        RequestDispatcher requestDispatcher = servletContext.getRequestDispatcher(viewPath);
-                        requestDispatcher.forward(request, response);
-                        return;
-                    } else if (controller instanceof RestController) {
-                        // TODO
-                    }
-
+        HandlerMethodInfo handlerMethodInfo = handleMethodInfoMapping.get(requestMappingPath);
+        try {
+            if (handlerMethodInfo != null) {
+                Controller controller = handlerMethodInfo.getController();
+                String httpMethod = request.getMethod();
+                if (!handlerMethodInfo.getSupportedHttpMethods().contains(httpMethod)) {
+                    // HTTP 方法不支持
+                    response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    return;
                 }
-            } catch (Throwable throwable) {
-                if (throwable.getCause() instanceof IOException) {
-                    throw (IOException) throwable.getCause();
-                } else {
-                    throw new ServletException(throwable.getCause());
+
+                Method handlerMethod = handlerMethodInfo.getHandlerMethod();
+                if (controller instanceof PageController) {
+                    PageController pageController = PageController.class.cast(controller);
+                    //String viewPath = pageController.execute(request, response);
+                    // 修改成反射的形式，支持多个方法
+                    String viewPath = (String) handlerMethod.invoke(pageController, request, response);
+                    // 页面请求 forward
+                    // request -> RequestDispatcher forward
+                    // RequestDispatcher requestDispatcher = request.getRequestDispatcher(viewPath);
+                    // ServletContext -> RequestDispatcher forward
+                    // ServletContext -> RequestDispatcher 必须以 "/" 开头
+                    ServletContext servletContext = request.getServletContext();
+                    if (!viewPath.startsWith("/")) {
+                        viewPath = "/" + viewPath;
+                    }
+                    RequestDispatcher requestDispatcher = servletContext.getRequestDispatcher(viewPath);
+                    requestDispatcher.forward(request, response);
+                    return;
+                } else if (controller instanceof RestController) {
+                    // TODO
                 }
+
+            }
+        } catch (Throwable throwable) {
+            if (throwable.getCause() instanceof IOException) {
+                throw (IOException) throwable.getCause();
+            } else {
+                throw new ServletException(throwable.getCause());
             }
         }
     }
