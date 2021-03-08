@@ -1,10 +1,10 @@
 package org.geektimes.projects.user.sql;
 
+import org.geektimes.Context.ComponentContext;
 import org.geektimes.function.ThrowableFunction;
-import org.geektimes.projects.user.domain.User;
 
+import javax.annotation.PostConstruct;
 import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
@@ -71,10 +71,11 @@ public class JdbcTemplate {
 
     }
 
-    private final DBConnectionManager dbConnectionManager;
+    private DBConnectionManager dbConnectionManager;
 
-    public JdbcTemplate(DBConnectionManager dbConnectionManager) {
-        this.dbConnectionManager = dbConnectionManager;
+    @PostConstruct
+    public void init() {
+        this.dbConnectionManager = ComponentContext.getInstance().getComponent("bean/DBConnectionManager");
     }
 
     private Connection getConnection() {

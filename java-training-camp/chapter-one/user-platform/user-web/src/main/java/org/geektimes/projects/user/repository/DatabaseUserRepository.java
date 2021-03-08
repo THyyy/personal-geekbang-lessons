@@ -1,9 +1,9 @@
 package org.geektimes.projects.user.repository;
 
 import org.geektimes.projects.user.domain.User;
-import org.geektimes.projects.user.sql.DBConnectionManager;
 import org.geektimes.projects.user.sql.JdbcTemplate;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -15,7 +15,8 @@ public class DatabaseUserRepository implements UserRepository {
 
     private static final Logger logger = Logger.getLogger(DatabaseUserRepository.class.getName());
 
-    private final JdbcTemplate jdbcTemplate = new JdbcTemplate(new DBConnectionManager());
+    @Resource(name = "bean/jdbcTemplate")
+    private JdbcTemplate jdbcTemplate;
 
     /**
      * 通用处理方式

@@ -2,9 +2,11 @@ package org.geektimes.projects.user.sql;
 
 import org.geektimes.projects.user.domain.User;
 
+import javax.annotation.Resource;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
+import javax.persistence.EntityManager;
 import javax.sql.DataSource;
 import java.beans.BeanInfo;
 import java.beans.Introspector;
@@ -20,58 +22,87 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class DBConnectionManager {
 
-    private Connection connection;
+    private final Logger logger = Logger.getLogger(DBConnectionManager.class.getName());
+
+    @Resource(name = "jdbc/UserPlatformDB")
+    private DataSource dataSource;
+
+    @Resource(name = "bean/EntityManager")
+    private EntityManager entityManager;
+
+    //private Connection connection;
 
     // JNDI 获取数据源
-    private static DataSource dataSource;
-    static {
-        try {
-            Context context = new InitialContext();
-            // 固定写法，因为 comp/env 是 JNDI 树上的一个节点，通过它来访问 JavaEE 容器中的配置
-            Context envContext = (Context) context.lookup("java:comp/env");
-            dataSource = (DataSource) envContext.lookup("jdbc/UserPlatformDB");
-            System.out.println("=====数据源初始化====");
-        } catch (NamingException e) {
-            e.printStackTrace();
-        }
-    }
+    //private static DataSource dataSource;
+    //static {
+    //    try {
+    //        Context context = new InitialContext();
+    //        // 固定写法，因为 comp/env 是 JNDI 树上的一个节点，通过它来访问 JavaEE 容器中的配置
+    //        Context envContext = (Context) context.lookup("java:comp/env");
+    //        dataSource = (DataSource) envContext.lookup("jdbc/UserPlatformDB");
+    //        System.out.println("=====数据源初始化====");
+    //    } catch (NamingException e) {
+    //        e.printStackTrace();
+    //    }
+    //}
 
-    public void setConnection(Connection connection) {
-        this.connection = connection;
+    //public void setConnection(Connection connection) {
+    //    this.connection = connection;
+    //}
+
+    public EntityManager getEntityManager() {
+        logger.info("当前 EntityManager 实现类：" + entityManager.getClass().getName());
+        return entityManager;
     }
 
     public Connection getConnection() {
-        //String databaseURL = "jdbc:derby:/Users/yuancome/personal-geekbang-lessons/user-platform;create=true";
-        String databaseURL = "jdbc:derby:E:/db/user-platform;create=true";
+        // 依赖查找
         Connection connection = null;
         try {
-            // SPI 方式获取（失败）
-            // connection = DriverManager.getConnection(databaseURL);
-            // Class.forName 触发 ClassLoader 加载驱动（成功）
-            //Class.forName("org.apache.derby.jdbc.EmbeddedDriver");
-            //Driver driver = DriverManager.getDriver(databaseURL);
-            //connection = driver.connect(databaseURL, new Properties());
-            // JNDI 方式获取成功，但需要修改驱动版本为 10.14.1.0
             connection = dataSource.getConnection();
-            System.out.println("====获取数据库连接====");
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, e.getMessage());
         }
-        this.connection = connection;
-        return this.connection;
+        if (connection != null) {
+            logger.log(Level.INFO, "获取 JNDI 数据库连接成功！");
+        }
+        return connection;
     }
 
+    //public Connection getConnection() {
+    //    //String databaseURL = "jdbc:derby:/Users/yuancome/personal-geekbang-lessons/user-platform;create=true";
+    //    String databaseURL = "jdbc:derby:E:/db/user-platform;create=true";
+    //    Connection connection = null;
+    //    try {
+    //        // SPI 方式获取（失败）
+    //        // connection = DriverManager.getConnection(databaseURL);
+    //        // Class.forName 触发 ClassLoader 加载驱动（成功）
+    //        //Class.forName("org.apache.derby.jdbc.EmbeddedDriver");
+    //        //Driver driver = DriverManager.getDriver(databaseURL);
+    //        //connection = driver.connect(databaseURL, new Properties());
+    //        // JNDI 方式获取成功，但需要修改驱动版本为 10.14.1.0
+    //        connection = dataSource.getConnection();
+    //        System.out.println("====获取数据库连接====");
+    //    } catch (Exception e) {
+    //        e.printStackTrace();
+    //    }
+    //    this.connection = connection;
+    //    return this.connection;
+    //}
+
     public void releaseConnection() {
-        if (this.connection != null) {
-            try {
-                this.connection.close();
-            } catch (SQLException e) {
-                throw new RuntimeException(e.getCause());
-            }
-        }
+        //if (this.connection != null) {
+        //    try {
+        //        this.connection.close();
+        //    } catch (SQLException e) {
+        //        throw new RuntimeException(e.getCause());
+        //    }
+        //}
     }
 
     public static final String DROP_USERS_TABLE_DDL_SQL = "DROP TABLE users";
