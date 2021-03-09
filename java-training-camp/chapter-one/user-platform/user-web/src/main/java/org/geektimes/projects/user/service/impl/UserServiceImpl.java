@@ -5,10 +5,12 @@ import org.geektimes.projects.user.repository.UserRepository;
 import org.geektimes.projects.user.service.UserService;
 import org.geektimes.projects.user.sql.LocalTransactional;
 
+import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import javax.persistence.EntityManager;
 import javax.validation.Validator;
 import java.util.Collection;
+import java.util.logging.Logger;
 
 /**
  * @author tanheyuan
@@ -16,6 +18,8 @@ import java.util.Collection;
  * @since 2021/3/1
  */
 public class UserServiceImpl implements UserService {
+
+    private static final Logger logger = Logger.getLogger("UserServiceImpl");
 
     @Resource(name = "bean/userRepository")
     private UserRepository userRepository;
@@ -94,5 +98,10 @@ public class UserServiceImpl implements UserService {
     @Override
     public void initUserTable(){
         userRepository.initTable();
+    }
+
+    @PreDestroy
+    public void destroy() {
+        logger.info("UserServiceImpl 正在销毁。。。");
     }
 }
