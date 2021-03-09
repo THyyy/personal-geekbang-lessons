@@ -12,6 +12,8 @@ import javax.naming.NameClassPair;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.servlet.ServletContext;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -52,7 +54,9 @@ public class ComponentContext {
 
     private ClassLoader classLoader;
 
-    private Map<String, Object> componentsMap = new LinkedHashMap<>();
+    private final Map<String, Object> componentsMap = new LinkedHashMap<>();
+    // 需要进行销毁前处理的 Bean 集合，key 为 Bean 对象，value 为对应的处理方法
+    private final Map<Object, Method> preDestroyMap = new LinkedHashMap<>();
 
     /**
      * 获取 ComponentContext
@@ -105,7 +109,9 @@ public class ComponentContext {
             // 初始阶段 - {@link PostConstruct}
             processPostConstruct(component, componentClass);
             // TODO 实现销毁阶段 - {@link PreDestroy}
-            processPreDestroy();
+            // 这部分处理逻辑应该是先使用一个 Map 进行管理需要处理的 Bean，
+            // 到了真正需要 destroy 的时候再调用其 Bean 的处理逻辑
+            processPreDestroy(component, componentClass);
         });
     }
 
@@ -146,8 +152,16 @@ public class ComponentContext {
         });
     }
 
-    private void processPreDestroy() {
-        // TODO
+    private void processPreDestroy(Object component, Class<?> componentClass) {
+        Stream.of(componentClass.getMethods())
+                .filter(method ->
+                        !Modifier.isStatic(method.getModifiers()) &&      // 非 static
+                                method.getParameterCount() == 0 &&        // 没有参数
+                                method.isAnnotationPresent(PreDestroy.class) // 标注 @PostConstruct
+                ).forEach(method -> {
+            // 将销毁前需要进行处理的类加到 Map 中
+            preDestroyMap.put(component, method);
+        });
     }
 
     /**
@@ -248,7 +262,17 @@ public class ComponentContext {
     }
 
     public void destroy() throws RuntimeException {
-        close(this.envContext);
+        preDestroyMap.forEach((bean,method) -> {
+            try {
+                method.invoke(bean);
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                logger.log(Level.SEVERE, String.format("%s 类销毁前处理失败，失败原因：", bean.getClass(), e));
+            }
+        });
+        logger.log(Level.INFO, "所有 Bean 销毁结束");
+        // 因为 Context#close() 方法幂等性问题，会抛出下列异常
+        // javax.naming.OperationNotSupportedException: Context is read only
+        //close(this.envContext);
     }
 
     private void initEnvContext() throws RuntimeException {
