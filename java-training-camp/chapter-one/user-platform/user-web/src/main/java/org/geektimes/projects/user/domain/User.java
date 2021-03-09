@@ -1,5 +1,8 @@
 package org.geektimes.projects.user.domain;
 
+import org.hibernate.validator.constraints.Email;
+import org.hibernate.validator.constraints.Length;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -8,6 +11,8 @@ import javax.persistence.Table;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -24,21 +29,26 @@ public class User implements Serializable {
 
     @Id
     @GeneratedValue(strategy = AUTO)
-    //@NotNull
+    @Min(1)
     private Long id;
 
     @Column
     private String name;
 
     @Column
-    //@Max(32)
-    //@Min(6)
+    // 可以使用 Hibernate 基于 JSR-303 额外添加的注解 @Length
+    // 区别在于 @Size 支持集合元素数量校验，而 @Length 只支持字符串长度校验
+    @Length
+    @Size(min = 6, max = 32)
     private String password;
 
     @Column
+    // Hibernate 基于 JSR-303 额外添加的注解
+    @Email
     private String email;
 
     @Column
+    @Pattern(regexp = "^1[3-9]\\d{9}$")
     private String phoneNumber;
 
     public Long getId() {

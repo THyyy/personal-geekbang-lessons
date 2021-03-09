@@ -8,10 +8,13 @@ import org.geektimes.web.mvc.controller.PageController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.validation.ConstraintViolation;
+import javax.validation.Validator;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import java.util.Collection;
+import java.util.Set;
 
 /**
  * @author tanheyuan
@@ -23,8 +26,11 @@ public class UserController implements PageController {
 
     private static final UserService userService;
 
+    private static final Validator validator;
+
     static {
         userService = ComponentContext.getInstance().getComponent("bean/UserService");
+        validator = ComponentContext.getInstance().getComponent("bean/Validator");
     }
 
     @GET
@@ -46,7 +52,13 @@ public class UserController implements PageController {
         user.setName("yuancome");
         user.setEmail(email);
         user.setPassword(password);
-        user.setPhoneNumber("13546789646");
+        user.setPhoneNumber(phoneNumber);
+
+        // 通过目前的委派校验器处理，校验失败原因返回给用户提示信息需要额外处理，后续优化
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+        if (!violations.isEmpty()) {
+            return "failed.jsp";
+        }
 
         boolean resutl = userService.register(user);
         if (resutl) {

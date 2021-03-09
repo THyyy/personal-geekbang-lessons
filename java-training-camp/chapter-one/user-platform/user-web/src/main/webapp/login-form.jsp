@@ -20,10 +20,12 @@
 </head>
 <body>
 	<div class="container">
-		<form class="form-signin" action="/register" method="post">
-			<h1 class="h3 mb-3 font-weight-normal">登录</h1>
-			<label for="inputEmail" class="sr-only">请输出电子邮件</label>
+		<form class="form-signin" action="${pageContext.request.contextPath}/register" method="post">
+			<h1 class="h3 mb-3 font-weight-normal">登录/注册</h1>
+			<label for="inputEmail" class="sr-only">请输入电子邮件</label>
 			<input type="email" id="inputEmail" class="form-control" name="email" placeholder="请输入电子邮件" required autofocus>
+			<label for="inputPassword" class="sr-only">手机号码</label>
+			<input type="password" id="inputPhoneNumber" class="form-control" name="phoneNumber" placeholder="请输入手机号码" required>
 			<label for="inputPassword" class="sr-only">Password</label>
 			<input type="password" id="inputPassword" class="form-control" name="password" placeholder="请输入密码" required>
 			<div class="checkbox mb-3">
