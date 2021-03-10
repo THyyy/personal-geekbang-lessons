@@ -16,7 +16,7 @@ import java.util.logging.Logger;
 @Deprecated
 public class TestingListener implements ServletContextListener {
 
-    private Logger logger = Logger.getLogger(this.getClass().getName());
+    private final Logger logger = Logger.getLogger(this.getClass().getName());
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {

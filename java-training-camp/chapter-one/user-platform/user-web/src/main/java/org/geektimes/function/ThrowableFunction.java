@@ -20,7 +20,7 @@ public interface ThrowableFunction<T, R> {
      * @throws RuntimeException wrappers {@link Throwable}
      */
     default R execute(T t) throws RuntimeException {
-        R result = null;
+        R result;
         try {
             result = apply(t);
         } catch (Throwable e) {

@@ -14,11 +14,16 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class InMemoryUserRepository implements UserRepository {
 
-    private Map<Long, User> repository = new ConcurrentHashMap<>();
+    private final Map<Long, User> repository = new ConcurrentHashMap<>();
 
     @Override
     public boolean save(User user) {
         return repository.put(user.getId(), user) == null;
+    }
+
+    @Override
+    public boolean saveWithTransaction(User user) {
+        return false;
     }
 
     @Override

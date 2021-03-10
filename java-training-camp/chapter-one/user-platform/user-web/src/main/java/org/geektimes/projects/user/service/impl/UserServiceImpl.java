@@ -7,8 +7,6 @@ import org.geektimes.projects.user.sql.LocalTransactional;
 
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
-import javax.persistence.EntityManager;
-import javax.validation.Validator;
 import java.util.Collection;
 import java.util.logging.Logger;
 
@@ -19,16 +17,10 @@ import java.util.logging.Logger;
  */
 public class UserServiceImpl implements UserService {
 
-    private static final Logger logger = Logger.getLogger("UserServiceImpl");
+    private static final Logger logger = Logger.getLogger(UserServiceImpl.class.getName());
 
     @Resource(name = "bean/userRepository")
     private UserRepository userRepository;
-
-    @Resource(name = "bean/EntityManager")
-    private EntityManager entityManager;
-
-    @Resource(name = "bean/Validator")
-    private Validator validator;
 
     @Override
     @LocalTransactional
@@ -67,7 +59,7 @@ public class UserServiceImpl implements UserService {
         // after process
         // transaction.commit();
 
-        return userRepository.save(user);
+        return userRepository.saveWithTransaction(user);
     }
 
     @Override

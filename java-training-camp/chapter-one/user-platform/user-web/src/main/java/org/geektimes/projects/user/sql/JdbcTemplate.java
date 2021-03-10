@@ -2,8 +2,15 @@ package org.geektimes.projects.user.sql;
 
 import org.geektimes.Context.ComponentContext;
 import org.geektimes.function.ThrowableFunction;
+import org.geektimes.projects.user.domain.User;
+import org.geektimes.projects.user.repository.DatabaseUserRepository;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
+import javax.persistence.EntityExistsException;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityTransaction;
+import javax.persistence.TransactionRequiredException;
 import java.beans.BeanInfo;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
@@ -20,6 +27,7 @@ import java.sql.Types;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.logging.Logger;
 
 import static org.apache.commons.lang.ClassUtils.wrapperToPrimitive;
 
@@ -31,6 +39,8 @@ import static org.apache.commons.lang.ClassUtils.wrapperToPrimitive;
  * @since 2021/3/3
  */
 public class JdbcTemplate {
+
+    private static final Logger logger = Logger.getLogger(JdbcTemplate.class.getName());
 
     /**
      * JavaBean field -> 数据库字段映射
@@ -80,6 +90,10 @@ public class JdbcTemplate {
 
     private Connection getConnection() {
         return dbConnectionManager.getConnection();
+    }
+
+    private EntityManager getEntityManager() {
+        return dbConnectionManager.getEntityManager();
     }
 
     public void releaseConnection() {
@@ -237,5 +251,37 @@ public class JdbcTemplate {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * 插入 SQL 通用处理方法(带事务处理)
+     * 基于 {@link EntityManager#persist(Object)}
+     *
+     * @param argObj 需要插入的对象
+     * @return 处理结果 成功 / 失败
+     */
+    public boolean executeInsertWithTransaction(Object argObj) {
+        EntityManager entityManager = getEntityManager();
+        EntityTransaction transaction = entityManager.getTransaction();
+        try {
+            transaction.begin();
+            logger.info("=====事务开启=====");
+            entityManager.persist(argObj);
+            transaction.commit();
+            logger.info("=====事务提交完成=====");
+        } catch (EntityExistsException e) {
+            logger.info("事务处理异常，持久化对象已存在，异常信息：" + e);
+            return false;
+        } catch (IllegalArgumentException e) {
+            logger.info("事务处理异常，需要持久化对象为非持久化对象或已被删除，异常信息：" + e);
+            return false;
+        } catch (TransactionRequiredException e) {
+            logger.info("事务处理异常，该操作未在事务中进行，异常信息：" + e);
+            return false;
+        } catch (Exception e) {
+            logger.info("事务处理异常，异常信息：" + e);
+            return false;
+        }
+        return true;
     }
 }
