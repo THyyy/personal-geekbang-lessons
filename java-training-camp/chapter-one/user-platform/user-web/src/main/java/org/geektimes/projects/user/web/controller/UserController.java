@@ -3,18 +3,15 @@ package org.geektimes.projects.user.web.controller;
 import org.geektimes.Context.ComponentContext;
 import org.geektimes.projects.user.domain.User;
 import org.geektimes.projects.user.service.UserService;
-import org.geektimes.projects.user.service.impl.UserServiceImpl;
 import org.geektimes.web.mvc.controller.PageController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import java.util.Collection;
-import java.util.Set;
 
 /**
  * @author tanheyuan
@@ -55,10 +52,10 @@ public class UserController implements PageController {
         user.setPhoneNumber(phoneNumber);
 
         // 通过目前的委派校验器处理，校验失败原因返回给用户提示信息需要额外处理，后续优化
-        Set<ConstraintViolation<User>> violations = validator.validate(user);
-        if (!violations.isEmpty()) {
-            return "failed.jsp";
-        }
+        //Set<ConstraintViolation<User>> violations = validator.validate(user);
+        //if (!violations.isEmpty()) {
+        //    return "failed.jsp";
+        //}
 
         boolean resutl = userService.register(user);
         if (resutl) {

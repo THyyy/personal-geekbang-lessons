@@ -61,7 +61,7 @@ public class ComponentContext {
     /**
      * 获取 ComponentContext
      *
-     * @return
+     * @return 组件上下文对象实例
      */
     public static ComponentContext getInstance() {
         return (ComponentContext) servletContext.getAttribute(CONTEXT_NAME);
@@ -211,9 +211,9 @@ public class ComponentContext {
     /**
      * 通过名称进行依赖查找
      *
-     * @param name
-     * @param <C>
-     * @return
+     * @param name 组件名称
+     * @param <C> 组件对象
+     * @return 组件对象
      */
     public <C> C getComponent(String name) {
         return (C) componentsMap.get(name);
@@ -222,7 +222,7 @@ public class ComponentContext {
     /**
      * 获取所有的组件名称
      *
-     * @return
+     * @return 组件名称列表
      */
     public List<String> getComponentNames() {
         return new ArrayList<>(componentsMap.keySet());
@@ -266,7 +266,7 @@ public class ComponentContext {
             try {
                 method.invoke(bean);
             } catch (IllegalAccessException | InvocationTargetException e) {
-                logger.log(Level.SEVERE, String.format("%s 类销毁前处理失败，失败原因：", bean.getClass(), e));
+                logger.log(Level.SEVERE, String.format("%s 类销毁前处理失败，失败原因：%s", bean.getClass(), e));
             }
         });
         logger.log(Level.INFO, "所有 Bean 销毁结束");

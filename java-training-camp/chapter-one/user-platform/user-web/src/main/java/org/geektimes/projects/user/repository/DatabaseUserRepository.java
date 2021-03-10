@@ -23,16 +23,17 @@ public class DatabaseUserRepository implements UserRepository {
      */
     private static final Consumer<Throwable> COMMON_EXCEPTION_HANDLER = e -> logger.log(Level.SEVERE, e.getMessage());
 
-    public static final String INSERT_USER_DML_SQL =
-            "INSERT INTO users(name,password,email,phoneNumber) VALUES " +
-                    "(?,?,?,?)";
-
     public static final String QUERY_ALL_USERS_DML_SQL = "SELECT id,name,password,email,phoneNumber FROM users";
 
     @Override
     public boolean save(User user) {
         return jdbcTemplate.executeInsert("users", user,
                 result -> result, COMMON_EXCEPTION_HANDLER);
+    }
+
+    @Override
+    public boolean saveWithTransaction(User user) {
+        return jdbcTemplate.executeInsertWithTransaction(user);
     }
 
     @Override
@@ -55,14 +56,11 @@ public class DatabaseUserRepository implements UserRepository {
         return jdbcTemplate.executeQuery("SELECT id,name,password,email,phoneNumber FROM users WHERE name=? and password=?",
                 resultSet -> {
                     User user;
-                    while (resultSet.next()) {
-                        user = jdbcTemplate.fieldMapping(User.class, resultSet);
-                        // 返回前释放数据库连接
-                        jdbcTemplate.releaseConnection();
-                        // 目前数据库没有做名称和密码唯一性，因此resultSet可能存在多条数据，返回第一条
-                        return user;
-                    }
-                    return null;
+                    user = jdbcTemplate.fieldMapping(User.class, resultSet);
+                    // 返回前释放数据库连接
+                    jdbcTemplate.releaseConnection();
+                    // 目前数据库没有做名称和密码唯一性，因此resultSet可能存在多条数据，返回第一条
+                    return user;
                 }, COMMON_EXCEPTION_HANDLER, userName, password);
     }
 
