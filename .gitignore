@@ -35,3 +35,4 @@ gen
 # Derby DB data Directory
 /java-training-camp/chapter-one/user-platform/user-web/db/
 /.extract/
+/java-training-camp/chapter-one/user-platform/*/target/
