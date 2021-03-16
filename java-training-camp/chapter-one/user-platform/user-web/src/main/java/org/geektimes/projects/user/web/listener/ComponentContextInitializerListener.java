@@ -21,7 +21,7 @@ import java.util.logging.Logger;
  */
 public class ComponentContextInitializerListener implements ServletContextListener {
 
-    Logger logger = Logger.getLogger("org.geektimes...ComponentContextInitializerListener");
+    private Logger logger = Logger.getLogger("org.geektimes...ComponentContextInitializerListener");
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {

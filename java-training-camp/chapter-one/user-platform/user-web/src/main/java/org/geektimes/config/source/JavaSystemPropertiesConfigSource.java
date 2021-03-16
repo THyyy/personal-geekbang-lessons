@@ -6,6 +6,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Java 系统属性配置源
+ *
+ * @author yuancome
+ * @date 2021/3/16
+ */
 public class JavaSystemPropertiesConfigSource implements ConfigSource {
 
     /**
