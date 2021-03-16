@@ -220,6 +220,22 @@ public class ComponentContext {
     }
 
     /**
+     * 获取 Component 列表
+     *
+     * @param prefix Component名称前置
+     * @return Component 列表
+     */
+    public List<Object> getComponentByPrefix(String prefix) {
+        List<Object> componentList = new ArrayList<>();
+        for (String componentName : getComponentNames()) {
+            if (componentName.startsWith(prefix)) {
+                componentList.add(getComponent(componentName));
+            }
+        }
+        return componentList;
+    }
+
+    /**
      * 获取所有的组件名称
      *
      * @return 组件名称列表
