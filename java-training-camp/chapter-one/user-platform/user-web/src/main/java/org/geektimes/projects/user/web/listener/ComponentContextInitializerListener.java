@@ -4,15 +4,12 @@ package org.geektimes.projects.user.web.listener;
 import org.geektimes.Context.ComponentContext;
 import org.geektimes.projects.user.domain.User;
 import org.geektimes.projects.user.jmx.MBeanManager;
+import org.geektimes.projects.user.management.ComponentContextManager;
 import org.geektimes.projects.user.management.UserManager;
 
-import javax.management.MBeanServer;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
-import java.lang.management.ManagementFactory;
 import java.util.logging.Logger;
 
 /**
@@ -30,6 +27,8 @@ public class ComponentContextInitializerListener implements ServletContextListen
         context.init(servletContext);
         try {
             MBeanManager.registerMBean("org.geektimes.projects.user.management:type=User", new UserManager(new User()));
+            // 注册自定义 MBean —— ComponentContextManager
+            MBeanManager.registerMBean("org.geektimes.projects.user.management:type=ComponentContext", new ComponentContextManager());
         } catch (Exception e) {
             logger.severe("注册 UserMBean 失败，异常信息：" + e);
         }
