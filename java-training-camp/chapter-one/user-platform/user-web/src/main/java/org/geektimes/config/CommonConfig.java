@@ -7,6 +7,7 @@ import org.eclipse.microprofile.config.ConfigValue;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.Converter;
 import org.geektimes.Context.ComponentContext;
+import org.geektimes.config.converter.CustomizedConverter;
 import org.geektimes.config.source.SystemPropertiesConfigSource;
 import org.geektimes.utils.TypeTransFormUtils;
 
@@ -30,19 +31,14 @@ import java.util.stream.Collectors;
  * @since 2021/3/16
  */
 public class CommonConfig implements Config {
-    private Logger logger = Logger.getLogger("org.geektimes.config.JavaConfig");
+    private final Logger logger = Logger.getLogger("org.geektimes.config.JavaConfig");
 
     /**
      * 内部可变的集合，不要直接暴露在外面
      */
     private List<ConfigSource> configSources = new LinkedList<>();
 
-    private static Comparator<ConfigSource> configSourceComparator = new Comparator<ConfigSource>() {
-        @Override
-        public int compare(ConfigSource o1, ConfigSource o2) {
-            return Integer.compare(o2.getOrdinal(), o1.getOrdinal());
-        }
-    };
+    private static Comparator<ConfigSource> configSourceComparator = (o1, o2) -> Integer.compare(o2.getOrdinal(), o1.getOrdinal());
 
     public CommonConfig() {
         // SPI 方式加载配置源

@@ -1,7 +1,7 @@
 package org.geektimes.projects.user.web.listener;
 
 import org.geektimes.Context.ComponentContext;
-import org.geektimes.config.ApplicationConfig;
+import org.geektimes.config.CommonConfig;
 import org.geektimes.projects.user.domain.User;
 import org.geektimes.projects.user.sql.DBConnectionManager;
 
@@ -24,9 +24,7 @@ public class TestingListener implements ServletContextListener {
     @Override
     public void contextInitialized(ServletContextEvent sce) {
         ComponentContext context = ComponentContext.getInstance();
-        logger.log(Level.INFO ,"configuration 配置: 「application.name :"
-                + ApplicationConfig.INSTANCE.getValue("application.name" , String.class) +"」");
-
+        testPropertyFromApplicationPropertiesFile();
         DBConnectionManager dbConnectionManager = context.getComponent("bean/DBConnectionManager");
         dbConnectionManager.getConnection();
         testPropertyFromServletContext(sce.getServletContext());
@@ -35,6 +33,12 @@ public class TestingListener implements ServletContextListener {
         logger.info("所有的 JNDI 组件名称：[");
         context.getComponentNames().forEach(logger::info);
         logger.info("]");
+    }
+
+    private void testPropertyFromApplicationPropertiesFile() {
+        String value = new CommonConfig().getValue("application.name", String.class);
+        logger.log(Level.INFO ,"configuration 配置: 「application.name :"
+                + value +"」");
     }
 
     private void testPropertyFromServletContext(ServletContext servletContext) {
@@ -59,7 +63,7 @@ public class TestingListener implements ServletContextListener {
         transaction.begin();
         entityManager.persist(user);
         transaction.commit();
-        System.out.println(entityManager.find(User.class, user.getId()));
+        System.out.println(entityManager.find(User.class, 1L));
     }
 
     @Override
