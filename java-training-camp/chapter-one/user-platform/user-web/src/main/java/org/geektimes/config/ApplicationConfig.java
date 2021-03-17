@@ -31,12 +31,12 @@ public class ApplicationConfig implements Config {
 
 	@Override
 	public <T> T getValue(String name, Class<T> propertyType) {
-		return getConfig().getValue(name , propertyType);
+		return getConfig().getValue(name, propertyType);
 	}
 
 	@Override
 	public ConfigValue getConfigValue(String name) {
-		return getConfig().getConfigValue(name );
+		return getConfig().getConfigValue(name);
 	}
 
 	@Override
