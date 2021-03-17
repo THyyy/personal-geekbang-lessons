@@ -29,7 +29,7 @@ public class ComponentContextInitializerListener implements ServletContextListen
         ComponentContext context = new ComponentContext();
         context.init(servletContext);
         try {
-            MBeanManager.registerMBean("org.geektimes.projects.user.management:type=User", new User());
+            MBeanManager.registerMBean("org.geektimes.projects.user.management:type=User", new UserManager(new User()));
         } catch (Exception e) {
             logger.severe("注册 UserMBean 失败，异常信息：" + e);
         }
