@@ -1,7 +1,6 @@
 package org.geektimes.projects.user.web.listener;
 
 import org.geektimes.Context.ComponentContext;
-import org.geektimes.config.CommonConfig;
 import org.geektimes.projects.user.domain.User;
 import org.geektimes.projects.user.sql.DBConnectionManager;
 
@@ -10,7 +9,6 @@ import javax.persistence.EntityTransaction;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -24,7 +22,7 @@ public class TestingListener implements ServletContextListener {
     @Override
     public void contextInitialized(ServletContextEvent sce) {
         ComponentContext context = ComponentContext.getInstance();
-        testPropertyFromApplicationPropertiesFile();
+        // testPropertyFromApplicationPropertiesFile();
         DBConnectionManager dbConnectionManager = context.getComponent("bean/DBConnectionManager");
         dbConnectionManager.getConnection();
         testPropertyFromServletContext(sce.getServletContext());
@@ -35,11 +33,11 @@ public class TestingListener implements ServletContextListener {
         logger.info("]");
     }
 
-    private void testPropertyFromApplicationPropertiesFile() {
-        String value = new CommonConfig().getValue("application.name", String.class);
-        logger.log(Level.INFO ,"configuration 配置: 「application.name :"
-                + value +"」");
-    }
+    // private void testPropertyFromApplicationPropertiesFile() {
+    //     String value = new CommonConfig().getValue("application.name", String.class);
+    //     logger.log(Level.INFO ,"configuration 配置: 「application.name :"
+    //             + value +"」");
+    // }
 
     private void testPropertyFromServletContext(ServletContext servletContext) {
         String propertyName = "application.name";
