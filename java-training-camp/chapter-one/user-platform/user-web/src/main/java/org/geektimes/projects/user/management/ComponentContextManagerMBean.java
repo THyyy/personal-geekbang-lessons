@@ -3,7 +3,7 @@ package org.geektimes.projects.user.management;
 import java.util.List;
 
 /**
- * {@link org.geektimes.Context.ComponentContext} MBean 接口描述
+ * {@link org.geektimes.component.context.ComponentContext} MBean 接口描述
  *
  * @author tanheyuan
  * @version 1.0

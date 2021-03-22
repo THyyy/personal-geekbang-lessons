@@ -43,3 +43,38 @@
 主要使用了 `org.geektimes.utils.TypeTransFormUtils` 进行转换，留下了复杂类型的扩展接口类：`org.geektimes.config.converter.CustomizedConverter`
 
 - 本地配置文件：`META-INF/application.properties`
+
+**第四周内容**
+
+- 完善 `my-dependency-injection` 模块，提供给 `user-web` 模块使用
+
+抽离 `user-web` 模块中的 `ComponentContext` 类到 `my-dependency-injection` 模块，添加 `ServletContainerInitializer` 实现类和 `ComponentContextInitializer` 监听器：
+
+```java
+public class WebAppServletComponentInitializer implements ServletContainerInitializer {
+    @Override
+    public void onStartup(Set<Class<?>> c, ServletContext servletContext) throws ServletException {
+        // 增加 ComponentContextInitializer 进行 ComponentContext 初始化
+        servletContext.addListener(ComponentContextInitializer.class);
+    }
+}
+
+public class ComponentContextInitializer implements ServletContextListener {
+    @Override
+    public void contextInitialized(ServletContextEvent sce) {
+        ServletContext servletContext = sce.getServletContext();
+        ComponentContext context = new ComponentContext();
+        context.init(servletContext);
+    }
+}
+```
+
+- 完善 `my-configuration` 模块，使其能在 `my-web-mvc` 模块中使用
+
+`MapBasedConfigSource` 类构造器添加 `lazy` 懒加载判断，并把 `source` 私有常量改成保护权限的变量：
+
+```java
+// private final Map<String, String> source;
+protected Map<String, String> source;
+```
+

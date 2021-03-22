@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentMap;
 public class DefaultConfigProviderResolver extends ConfigProviderResolver {
 
     private ConcurrentMap<ClassLoader, Config> configsRepository = new ConcurrentHashMap<>();
+    private ConcurrentMap<ClassLoader, ConfigBuilder> configsBuilderRepository = new ConcurrentHashMap<>();
 
     @Override
     public Config getConfig() {
@@ -45,7 +46,8 @@ public class DefaultConfigProviderResolver extends ConfigProviderResolver {
     }
 
     protected ConfigBuilder newConfigBuilder(ClassLoader classLoader) {
-        return new DefaultConfigBuilder(resolveClassLoader(classLoader));
+        ClassLoader loader = resolveClassLoader(classLoader);
+        return configsBuilderRepository.computeIfAbsent(loader, e -> new DefaultConfigBuilder(loader));
     }
 
     protected Config newConfig(ClassLoader classLoader) {

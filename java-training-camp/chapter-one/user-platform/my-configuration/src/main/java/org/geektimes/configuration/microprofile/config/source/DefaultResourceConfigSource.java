@@ -13,7 +13,7 @@ public class DefaultResourceConfigSource extends MapBasedConfigSource {
     private final Logger logger = Logger.getLogger(this.getClass().getName());
 
     public DefaultResourceConfigSource() {
-        super("Default Config File", 100);
+        super("Default Config File", 100, false);
     }
 
     @Override

@@ -1,6 +1,6 @@
 package org.geektimes.projects.user.management;
 
-import org.geektimes.Context.ComponentContext;
+import org.geektimes.component.context.ComponentContext;
 
 import java.util.List;
 
@@ -11,7 +11,7 @@ import java.util.List;
  * @version 1.0
  * @since 2021/3/17
  */
-public class ComponentContextManager implements ComponentContextManagerMBean{
+public class ComponentContextManager implements ComponentContextManagerMBean {
 
     private ComponentContext componentContext = ComponentContext.getInstance();
 

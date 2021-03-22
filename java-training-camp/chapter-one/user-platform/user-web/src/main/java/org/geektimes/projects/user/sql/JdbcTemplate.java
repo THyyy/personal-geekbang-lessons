@@ -1,12 +1,9 @@
 package org.geektimes.projects.user.sql;
 
-import org.geektimes.Context.ComponentContext;
+import org.geektimes.component.context.ComponentContext;
 import org.geektimes.function.ThrowableFunction;
-import org.geektimes.projects.user.domain.User;
-import org.geektimes.projects.user.repository.DatabaseUserRepository;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import javax.persistence.EntityExistsException;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
