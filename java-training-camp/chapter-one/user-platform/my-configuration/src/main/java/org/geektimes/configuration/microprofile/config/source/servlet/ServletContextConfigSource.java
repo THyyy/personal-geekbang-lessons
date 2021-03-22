@@ -11,8 +11,11 @@ public class ServletContextConfigSource extends MapBasedConfigSource {
     private final ServletContext servletContext;
 
     public ServletContextConfigSource(ServletContext servletContext) {
-        super("ServletContext Init Parameters", 500);
+        // 该数据源需要延迟加载，否则先从上下文获取配置再设置上下文会导致空指针异常
+        super("ServletContext Init Parameters", 500, true);
         this.servletContext = servletContext;
+        // 懒加载时获取配置
+        this.source = getProperties();
     }
 
     @Override

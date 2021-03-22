@@ -16,12 +16,21 @@ public abstract class MapBasedConfigSource implements ConfigSource {
 
     private final int ordinal;
 
-    private final Map<String, String> source;
+    protected Map<String, String> source;
 
-    protected MapBasedConfigSource(String name, int ordinal) {
+    /**
+     * 配置源父类构造器
+     *
+     * @param name 配置源名称
+     * @param ordinal 配置源优先级，数值高的优先
+     * @param lazy 是否懒加载，若为 true，需要子类添加 this.source = getProperties();
+     */
+    protected MapBasedConfigSource(String name, int ordinal, boolean lazy) {
         this.name = name;
         this.ordinal = ordinal;
-        this.source = getProperties();
+        if (!lazy) {
+            this.source = getProperties();
+        }
     }
 
     /**
