@@ -29,5 +29,6 @@ public class ServletConfigInitializer implements ServletContainerInitializer {
         Config config = configBuilder.build();
         // 注册 Config 关联到当前 ClassLoader
         configProviderResolver.registerConfig(config, classLoader);
+        servletContext.setAttribute("config", config);
     }
 }

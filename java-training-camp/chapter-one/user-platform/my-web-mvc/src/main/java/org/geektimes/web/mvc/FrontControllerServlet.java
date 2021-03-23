@@ -1,6 +1,8 @@
 package org.geektimes.web.mvc;
 
 import org.apache.commons.lang.StringUtils;
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.geektimes.web.mvc.controller.Controller;
 import org.geektimes.web.mvc.controller.PageController;
 import org.geektimes.web.mvc.controller.RestController;
@@ -30,15 +32,18 @@ public class FrontControllerServlet extends HttpServlet {
     /**
      * 请求路径和 {@link HandlerMethodInfo} 映射关系缓存
      */
-    private Map<String, HandlerMethodInfo> handleMethodInfoMapping = new HashMap<>();
+    private final Map<String, HandlerMethodInfo> handleMethodInfoMapping = new HashMap<>();
 
     /**
      * 初始化 Servlet
      *
-     * @param servletConfig
+     * @param servletConfig servlet 配置
      */
     @Override
     public void init(ServletConfig servletConfig) {
+        ServletContext servletContext = servletConfig.getServletContext();
+        Object config = servletContext.getAttribute("config");
+        System.out.println("first out：" + ((Config)config).getConfigValue("application.name").getValue());
         initHandleMethods();
     }
 
@@ -47,11 +52,13 @@ public class FrontControllerServlet extends HttpServlet {
      * 利用 ServiceLoader 技术（Java SPI）
      */
     private void initHandleMethods() {
+        Config config = ConfigProviderResolver.instance().getConfig(Thread.currentThread().getContextClassLoader());
+        System.out.println(config.getConfigValue("application.name").getValue());
         for (Controller controller : ServiceLoader.load(Controller.class)) {
             Class<?> controllerClass = controller.getClass();
             Path pathFromClass = controllerClass.getAnnotation(Path.class);
             // 不直接赋值 pathFromClass.value() 是因为下面的循环会不断 append 导致路径不正确
-            String requestPath = "";
+            String requestPath;
             Method[] publicMethods = controllerClass.getMethods();
             // 处理方法支持的 HTTP 方法集合
             for (Method method : publicMethods) {
@@ -71,7 +78,7 @@ public class FrontControllerServlet extends HttpServlet {
      * 获取处理方法中标注的 HTTP方法集合
      *
      * @param method 处理方法
-     * @return
+     * @return 支持的方法集合
      */
     private Set<String> findSupportedHttpMethods(Method method) {
         Set<String> supportedHttpMethods = new LinkedHashSet<>();
@@ -94,10 +101,10 @@ public class FrontControllerServlet extends HttpServlet {
     /**
      * SCWCD
      *
-     * @param request
-     * @param response
-     * @throws ServletException
-     * @throws IOException
+     * @param request HTTP 请求
+     * @param response HTTP 相应
+     * @throws ServletException Servlet 异常
+     * @throws IOException IO 异常
      */
     @Override
     public void service(HttpServletRequest request, HttpServletResponse response)
@@ -106,8 +113,7 @@ public class FrontControllerServlet extends HttpServlet {
         // requestURI = /a/hello/world
         String requestURI = request.getRequestURI();
         // contextPath  = /a or "/" or ""
-        String servletContextPath = request.getContextPath();
-        String prefixPath = servletContextPath;
+        String prefixPath = request.getContextPath();
         // 映射路径（子路径）
         String requestMappingPath = substringAfter(requestURI,
                 StringUtils.replace(prefixPath, "//", "/"));
@@ -125,7 +131,7 @@ public class FrontControllerServlet extends HttpServlet {
 
                 Method handlerMethod = handlerMethodInfo.getHandlerMethod();
                 if (controller instanceof PageController) {
-                    PageController pageController = PageController.class.cast(controller);
+                    PageController pageController = (PageController) controller;
                     //String viewPath = pageController.execute(request, response);
                     // 修改成反射的形式，支持多个方法
                     String viewPath = (String) handlerMethod.invoke(pageController, request, response);
@@ -140,9 +146,9 @@ public class FrontControllerServlet extends HttpServlet {
                     }
                     RequestDispatcher requestDispatcher = servletContext.getRequestDispatcher(viewPath);
                     requestDispatcher.forward(request, response);
-                    return;
                 } else if (controller instanceof RestController) {
                     // TODO
+                    System.out.println("REST 控制器请求待实现");
                 }
 
             }
