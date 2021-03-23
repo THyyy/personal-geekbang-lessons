@@ -36,7 +36,8 @@ class DefaultConfig implements Config {
 
     @Override
     public ConfigValue getConfigValue(String propertyName) {
-        return null;
+        ConfigSource configSource = getConfigSource(propertyName);
+        return configSource != null ? new DefaultConfigValue(configSource, propertyName) : null;
     }
 
     protected String getPropertyValue(String propertyName) {
@@ -66,6 +67,22 @@ class DefaultConfig implements Config {
     @Override
     public Iterable<ConfigSource> getConfigSources() {
         return configSources;
+    }
+
+    /**
+     * 获取配置源
+     *
+     * @param propertyName 配置属性名
+     * @return
+     */
+    private ConfigSource getConfigSource(String propertyName) {
+        Iterable<ConfigSource> configSources = getConfigSources();
+        for (ConfigSource configSource : configSources) {
+            if (configSource.getPropertyNames().contains(propertyName)) {
+                return configSource;
+            }
+        }
+        return null;
     }
 
     @Override

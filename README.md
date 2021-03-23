@@ -78,3 +78,17 @@ public class ComponentContextInitializer implements ServletContextListener {
 protected Map<String, String> source;
 ```
 
+`FrontControllerServlet#init` 方法中获取 `servletContext` 上下文，获取对应配置：
+
+```java
+public class FrontControllerServlet extends HttpServlet {
+     @Override
+    public void init(ServletConfig servletConfig) {
+        ServletContext servletContext = servletConfig.getServletContext();
+        Object config = servletContext.getAttribute("config");
+        System.out.println("first out：" + ((Config)config).getConfigValue("application.name").getValue());
+        initHandleMethods();
+    }
+}    
+```
+

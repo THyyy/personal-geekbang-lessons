@@ -16,6 +16,13 @@
 
 
     <dependencies>
+
+        <dependency>
+            <groupId>com.yuancome</groupId>
+            <artifactId>my-configuration</artifactId>
+            <version>${user-version}</version>
+        </dependency>
+
         <!-- Servlet API -->
         <dependency>
             <groupId>javax.servlet</groupId>
