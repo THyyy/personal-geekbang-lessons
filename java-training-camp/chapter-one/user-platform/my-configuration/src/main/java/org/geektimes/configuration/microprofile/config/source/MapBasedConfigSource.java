@@ -18,6 +18,10 @@ public abstract class MapBasedConfigSource implements ConfigSource {
 
     protected Map<String, String> source;
 
+    protected MapBasedConfigSource(String name, int ordinal) {
+        this(name, ordinal, false);
+    }
+
     /**
      * 配置源父类构造器
      *
