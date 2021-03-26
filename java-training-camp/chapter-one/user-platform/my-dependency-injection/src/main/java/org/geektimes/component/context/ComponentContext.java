@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -102,20 +103,34 @@ public class ComponentContext {
      * </ol>
      */
     protected void initializeComponents() {
-        componentsMap.values().forEach(component -> {
-            Class<?> componentClass = component.getClass();
-            // 注入阶段 - {@link Resource}
-            injectComponents(component, componentClass);
-            // 初始阶段 - {@link PostConstruct}
-            processPostConstruct(component, componentClass);
-            // TODO 实现销毁阶段 - {@link PreDestroy}
-            // 这部分处理逻辑应该是先使用一个 Map 进行管理需要处理的 Bean，
-            // 到了真正需要 destroy 的时候再调用其 Bean 的处理逻辑
-            processPreDestroy(component, componentClass);
-        });
+        componentsMap.values().forEach(this::initializeComponent);
     }
 
-    private void injectComponents(Object component, Class<?> componentClass) {
+    /**
+     * 初始化组件（支持 Java 标准 Commons Annotation 生命周期）
+     * <ol>
+     *  <li>注入阶段 - {@link Resource}</li>
+     *  <li>初始阶段 - {@link PostConstruct}</li>
+     *  <li>销毁阶段 - {@link PreDestroy}</li>
+     * </ol>
+     */
+    public void initializeComponent(Object component) {
+        Class<?> componentClass = component.getClass();
+        // 注入阶段 - {@link Resource}
+        injectComponent(component, componentClass);
+        // 查询候选方法
+        List<Method> candidateMethods = findCandidateMethods(componentClass);
+        // 初始阶段 - {@link PostConstruct}
+        processPostConstruct(component, candidateMethods);
+        // 本阶段处理 {@link PreDestroy} 方法元数据
+        processPreDestroy(component, candidateMethods);
+    }
+
+    public void injectComponent(Object component) {
+        injectComponent(component, component.getClass());
+    }
+
+    private void injectComponent(Object component, Class<?> componentClass) {
         Stream.of(componentClass.getDeclaredFields())
                 .filter(field -> {
                     int mods = field.getModifiers();
@@ -136,32 +151,37 @@ public class ComponentContext {
         });
     }
 
-    private void processPostConstruct(Object component, Class<?> componentClass) {
-        Stream.of(componentClass.getMethods())
-                .filter(method ->
-                        !Modifier.isStatic(method.getModifiers()) &&      // 非 static
-                                method.getParameterCount() == 0 &&        // 没有参数
-                                method.isAnnotationPresent(PostConstruct.class) // 标注 @PostConstruct
-                ).forEach(method -> {
-            // 执行目标方法
-            try {
-                method.invoke(component);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
+    private void processPostConstruct(Object component, List<Method> candidateMethods) {
+        candidateMethods
+                .stream()
+                .filter(method -> method.isAnnotationPresent(PostConstruct.class))// 标注 @PostConstruct
+                .forEach(method -> {
+                    // 执行目标方法
+                    ThrowableAction.execute(() -> method.invoke(component));
+                });
     }
 
-    private void processPreDestroy(Object component, Class<?> componentClass) {
-        Stream.of(componentClass.getMethods())
+    private void processPreDestroy(Object component, List<Method> candidateMethods) {
+        candidateMethods.stream()
+                .filter(method -> method.isAnnotationPresent(PreDestroy.class)) // 标注 @PreDestroy
+                .forEach(method -> {
+                    // 将销毁前需要进行处理的类加到 Map 中
+                    preDestroyMap.put(component, method);
+                });
+    }
+
+    /**
+     * 获取组件类中的候选方法
+     *
+     * @param componentClass 组件类
+     * @return non-null
+     */
+    private List<Method> findCandidateMethods(Class<?> componentClass) {
+        return Stream.of(componentClass.getMethods())                     // public 方法
                 .filter(method ->
                         !Modifier.isStatic(method.getModifiers()) &&      // 非 static
-                                method.getParameterCount() == 0 &&        // 没有参数
-                                method.isAnnotationPresent(PreDestroy.class) // 标注 @PostConstruct
-                ).forEach(method -> {
-            // 将销毁前需要进行处理的类加到 Map 中
-            preDestroyMap.put(component, method);
-        });
+                                method.getParameterCount() == 0)          // 无参数
+                .collect(Collectors.toList());
     }
 
     /**
