@@ -1,7 +1,7 @@
 # personal-geekbang-lessons——个人极客时间课程代码
 ## 第一模块：Java EE 单体应用
 
-**第一周内容：**
+### 第一周
 
 - 完善自研 MVC 框架 
 
@@ -16,7 +16,7 @@
 
 1. 把数据库操作相关方法抽出到 `org.geektimes.projects.user.sql.JdbcTemplate` 类
 
-**第二周内容：**
+### 第二周
 
 - 完善简易版的依赖注入框架，并通过该框架完成用户注册功能
 
@@ -24,7 +24,7 @@
 
 - 实现用户注册数据校验（id > 0，6 < password 长度 < 32）
 
-**第三周内容：**
+### 第三周
 
 - 实现自定义 JMX MBean，通过 Jolokia 做 Servlet 代理
 
@@ -44,7 +44,7 @@
 
 - 本地配置文件：`META-INF/application.properties`
 
-**第四周内容**
+### 第四周
 
 - 完善 `my-dependency-injection` 模块，提供给 `user-web` 模块使用
 
@@ -92,3 +92,28 @@ public class FrontControllerServlet extends HttpServlet {
 }    
 ```
 
+### 第五周
+
+- 修复本程序 `org.geektimes.reactive.streams` 包下的程序逻辑
+
+1. 主要是因为接受消息之后应该先处理再判断下一次是否超出设定的最大请求数即可
+
+```java
+public class BusinessSubscriber<T> implements Subscriber<T> {
+	@Override
+    public void onNext(Object o) {
+        System.out.println("收到数据：" + o);
+        if (++count > 2) { // 当到达数据阈值时，取消 Publisher 给当前 Subscriber 发送数据
+            subscription.cancel();
+            return;
+        }
+    }   
+}    
+```
+
+2. 数据请求处理流程：`Publisher` -> `publisher.subscribe(Subscriber s)` -> `publisher.publish(T data);`
+3. 需要注意的是，当队列正常处理完成时需要调用 `org.reactivestreams.Subscriber#onComplete` 方法，异常时需要调用 `org.reactivestreams.Subscriber#onError` 方法
+
+- 继续完善 `my-rest-client POST` 方法
+
+s
