@@ -34,6 +34,12 @@
             <version>${user-version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.yuancome</groupId>
+            <artifactId>my-reactive-messaging</artifactId>
+            <version>${user-version}</version>
+        </dependency>
+
         <!-- Servlet API -->
         <dependency>
             <groupId>javax.servlet</groupId>

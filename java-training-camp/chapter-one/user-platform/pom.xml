@@ -18,6 +18,7 @@
         <module>my-configuration</module>
         <module>my-dependency-injection</module>
         <module>my-rest-client</module>
+        <module>my-reactive-messaging</module>
         <module>my-web-mvc</module>
         <module>user-web</module>
     </modules>
@@ -32,10 +33,13 @@
         <javax.ws.rs-api.version>2.0.1</javax.ws.rs-api.version>
         <jstl.version>1.2</jstl.version>
         <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
+        <javax.inject.version>1</javax.inject.version>
+        <javax.cdi-api.version>2.0</javax.cdi-api.version>
 
         <!-- MicroProfile 版本-->
         <microprofile-config-api.version>2.0</microprofile-config-api.version>
         <microprofile-rest-client-api.version>2.0</microprofile-rest-client-api.version>
+        <microprofile-reactive-messaging-api.version>1.0</microprofile-reactive-messaging-api.version>
 
         <!-- 第三方开源依赖版本-->
         <commons-lang.version>2.6</commons-lang.version>
@@ -47,6 +51,7 @@
         <hibernate.validator.version>5.1.0.Final</hibernate.validator.version>
         <jolokia-version>1.6.2</jolokia-version>
         <jackson.version>2.9.5</jackson.version>
+        <activemq.version>5.9.1</activemq.version>
 
         <!-- Testing 版本 -->
         <junit.version>4.13</junit.version>
@@ -94,24 +99,62 @@
                 <version>${javax.annotation-api.version}</version>
             </dependency>
 
+            <!-- Java Inject API -->
+            <dependency>
+                <groupId>javax.inject</groupId>
+                <artifactId>javax.inject</artifactId>
+                <version>${javax.inject.version}</version>
+            </dependency>
+
+            <!-- Java CDI API -->
+            <dependency>
+                <groupId>javax.enterprise</groupId>
+                <artifactId>cdi-api</artifactId>
+                <version>${javax.cdi-api.version}</version>
+            </dependency>
+
+            <!-- MicroProfile -->
+            <dependency>
+                <groupId>org.eclipse.microprofile.config</groupId>
+                <artifactId>microprofile-config-api</artifactId>
+                <version>${microprofile-config-api.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.microprofile.rest.client</groupId>
+                <artifactId>microprofile-rest-client-api</artifactId>
+                <version>${microprofile-rest-client-api.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.microprofile.reactive.messaging</groupId>
+                <artifactId>microprofile-reactive-messaging-api</artifactId>
+                <version>${microprofile-reactive-messaging-api.version}</version>
+            </dependency>
+
+            <!-- Third-Party Dependencies -->
+            <!-- Apache Commons Language -->
             <dependency>
                 <groupId>commons-lang</groupId>
                 <artifactId>commons-lang</artifactId>
                 <version>${commons-lang.version}</version>
             </dependency>
 
+            <!-- Apache Commons I/O -->
             <dependency>
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
                 <version>${commons-io.version}</version>
             </dependency>
 
+            <!-- Apache Commons Validator -->
             <dependency>
                 <groupId>commons-validator</groupId>
                 <artifactId>commons-validator</artifactId>
                 <version>${commons-validator.version}</version>
             </dependency>
 
+            <!-- Apache Commons Configuration -->
             <dependency>
                 <groupId>commons-configuration</groupId>
                 <artifactId>commons-configuration</artifactId>
@@ -145,19 +188,6 @@
                 <version>${hibernate.validator.version}</version>
             </dependency>
 
-            <!-- MicroProfile -->
-            <dependency>
-                <groupId>org.eclipse.microprofile.config</groupId>
-                <artifactId>microprofile-config-api</artifactId>
-                <version>${microprofile-config-api.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.eclipse.microprofile.rest.client</groupId>
-                <artifactId>microprofile-rest-client-api</artifactId>
-                <version>${microprofile-rest-client-api.version}</version>
-            </dependency>
-
             <!-- jolokia -->
             <dependency>
                 <groupId>org.jolokia</groupId>
@@ -182,7 +212,14 @@
                 <version>${jackson.version}</version>
             </dependency>
 
+            <!-- Apache ActiveMQ -->
+            <dependency>
+                <groupId>org.apache.activemq</groupId>
+                <artifactId>activemq-all</artifactId>
+                <version>${activemq.version}</version>
+            </dependency>
 
+            <!-- Testing Dependencies -->
             <!-- JUnit -->
             <dependency>
                 <groupId>junit</groupId>
