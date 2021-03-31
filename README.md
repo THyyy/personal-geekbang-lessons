@@ -6,7 +6,7 @@
 - 完善自研 MVC 框架 
 
 1. 修复了 `org.geektimes.web.mvc.FrontControllerServlet#initHandleMethods ` 方法**路径重复拼接**问题
-2.  通过反射修复了 `org.geektimes.web.mvc.FrontControllerServlet#service ` 方法一个**请求路径对应一个控制器类**问题
+2. 通过反射修复了 `org.geektimes.web.mvc.FrontControllerServlet#service ` 方法一个**请求路径对应一个控制器类**问题
 
 - 完成 JNDI 获取数据库源
 
@@ -116,4 +116,12 @@ public class BusinessSubscriber<T> implements Subscriber<T> {
 
 - 继续完善 `my-rest-client POST` 方法
 
-s
+  1. 参考 `org.geektimes.rest.client.HttpGetInvocation` 类创建 `org.geektimes.rest.client.HttpPostInvocation` 类，多加了 `Entity<?> entity` 成员变量作为 `Post` 请求的请求体对象
+
+  - 需要注意，`Post` 请求需要设置请求头内容类型 `Content-type`
+
+  2. `org.geektimes.rest.client.DefaultInvocationBuilder#buildPost` 方法返回值为新增的 `HttpPostInvocation` 类的实例对象
+  3. 新增`org.geektimes.projects.user.web.controller.HelloWorldController#testPost` 方法作为测试 `Post` 请求的接口，请求路径为：`127.0.0.1:8080/hello/test`，可以使用 `org.geektimes.rest.demo.RestClientDemo#main` 方法直接测试
+
+  - 目前响应时需要用 `javax.servlet.http.HttpServletResponse` 设置响应数据，但是参考其他小伙伴的代码是不需要设置的，还没找到原因
+
