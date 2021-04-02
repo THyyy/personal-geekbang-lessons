@@ -63,6 +63,11 @@
         </dependency>
 
         <dependency>
+            <groupId>commons-dbcp</groupId>
+            <artifactId>commons-dbcp</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.derby</groupId>
             <artifactId>derby</artifactId>
         </dependency>
@@ -136,6 +141,9 @@
                     <!--开启和使用 JNDI 方式-->
                     <enableNaming>true</enableNaming>
                     <!--<useNaming>true</useNaming>-->
+                    <tomcatConfigurationFilesDirectory>
+                        src/main/webapp/META-INF/conf/
+                    </tomcatConfigurationFilesDirectory>
                 </configuration>
                 <executions>
                     <execution>
