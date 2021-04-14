@@ -125,3 +125,88 @@ public class BusinessSubscriber<T> implements Subscriber<T> {
 
   - 目前响应时需要用 `javax.servlet.http.HttpServletResponse` 设置响应数据，但是参考其他小伙伴的代码是不需要设置的，还没找到原因
 
+
+
+### 第六周
+
+- 提供一套抽象 API 实现对象的序列化和反序列化
+
+抽出一个序列化和反序列化抽象类 `org.geektimes.cache.serialize.CacheSerializer`
+
+```java
+// 序列化方法
+public final byte[] serialize(Serializable source) {
+        if (source == null) {
+            return new byte[0];
+        }
+  			// 抽象方法 doSerialize 给子类实现
+        return doSerialize(source);
+}
+
+// 反序列化方法
+public final <T> T deserialize(byte[] data) {
+        if (data == null || data.length == 0) {
+            return null;
+        }
+  			// 抽象方法 doDeserialize 给子类实现
+        return doDeserialize(data);
+}
+```
+
+默认实现类 `org.geektimes.cache.serialize.DefaultCacheSerializer`
+
+```java
+public class DefaultCacheSerializer extends CacheSerializer {
+
+    @Override
+    public byte[] doSerialize(Serializable source) {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream(1024);
+             ObjectOutputStream objectOutputStream = new ObjectOutputStream(out);) {
+            objectOutputStream.writeObject(source);
+            return out.toByteArray();
+        } catch (IOException e) {
+            throw new CacheException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public <T> T doDeserialize(byte[] data) {
+        try (ByteArrayInputStream inputStream = new ByteArrayInputStream(data);
+             ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);) {
+            return (T) objectInputStream.readObject();
+        } catch (Exception e) {
+            throw new CacheException(e.getMessage(), e);
+        }
+    }
+}
+```
+
+关于 `Redis` 的具体序列化和反序列化实现类 `org.geektimes.cache.redis.DefaultRedisSerializer`
+
+```java
+public K decodeKey(ByteBuffer byteBuffer) {
+        byte[] bytes = new byte[byteBuffer.remaining()];
+        byteBuffer.get(bytes, 0, bytes.length);
+        return serializer.deserialize(bytes);
+}
+
+
+public V decodeValue(ByteBuffer byteBuffer) {
+        byte[] bytes = new byte[byteBuffer.remaining()];
+        byteBuffer.get(bytes, 0, bytes.length);
+        return serializer.deserialize(bytes);
+}
+
+public ByteBuffer encodeKey(K key) {
+        return ByteBuffer.wrap(serializer.serialize(key));
+}
+
+
+public ByteBuffer encodeValue(V value) {
+        return ByteBuffer.wrap(serializer.serialize(value));
+}
+```
+
+- 通过 Lettuce 实现一套 Redis CacheManager 以及 Cache
+
+具体参考：`org.geektimes.cache.redis.LettuceCache` 和 `org.geektimes.cache.redis.LettuceCacheManager`，详细代码不列出
