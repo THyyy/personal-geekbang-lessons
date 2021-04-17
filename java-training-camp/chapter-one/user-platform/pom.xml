@@ -21,6 +21,7 @@
         <module>my-reactive-messaging</module>
         <module>my-cache</module>
         <module>my-web-mvc</module>
+        <module>my-interceptor</module>
         <module>user-web</module>
     </modules>
 
@@ -37,6 +38,7 @@
         <javax.inject.version>1</javax.inject.version>
         <javax.cdi-api.version>2.0</javax.cdi-api.version>
         <javax.cache-api.version>1.1.1</javax.cache-api.version>
+        <javax.interceptor-api.version>1.2</javax.interceptor-api.version>
 
         <!-- MicroProfile 版本-->
         <microprofile-config-api.version>2.0</microprofile-config-api.version>
@@ -125,6 +127,13 @@
                 <groupId>javax.cache</groupId>
                 <artifactId>cache-api</artifactId>
                 <version>${javax.cache-api.version}</version>
+            </dependency>
+
+            <!-- Java Interceptor API -->
+            <dependency>
+                <groupId>javax.interceptor</groupId>
+                <artifactId>javax.interceptor-api</artifactId>
+                <version>${javax.interceptor-api.version}</version>
             </dependency>
 
             <!-- MicroProfile -->
