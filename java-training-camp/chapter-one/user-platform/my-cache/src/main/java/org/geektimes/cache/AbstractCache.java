@@ -27,7 +27,11 @@ import org.geektimes.cache.processor.MutableEntryAdapter;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.CacheManager;
-import javax.cache.configuration.*;
+import javax.cache.configuration.CacheEntryListenerConfiguration;
+import javax.cache.configuration.CompleteConfiguration;
+import javax.cache.configuration.Configuration;
+import javax.cache.configuration.Factory;
+import javax.cache.configuration.MutableConfiguration;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.EventType;
 import javax.cache.expiry.Duration;
@@ -40,7 +44,13 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
-import java.util.*;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
@@ -51,8 +61,11 @@ import static org.geektimes.cache.ExpirableEntry.requireKeyNotNull;
 import static org.geektimes.cache.ExpirableEntry.requireValueNotNull;
 import static org.geektimes.cache.configuration.ConfigurationUtils.immutableConfiguration;
 import static org.geektimes.cache.configuration.ConfigurationUtils.mutableConfiguration;
-import static org.geektimes.cache.event.GenericCacheEntryEvent.*;
-import static org.geektimes.cache.management.ManagementUtils.registerCacheMXBeanIfRequired;
+import static org.geektimes.cache.event.GenericCacheEntryEvent.createdEvent;
+import static org.geektimes.cache.event.GenericCacheEntryEvent.expiredEvent;
+import static org.geektimes.cache.event.GenericCacheEntryEvent.removedEvent;
+import static org.geektimes.cache.event.GenericCacheEntryEvent.updatedEvent;
+import static org.geektimes.cache.management.ManagementUtils.registerMBeansIfRequired;
 
 /**
  * The abstract non-thread-safe implementation of {@link Cache}
@@ -98,7 +111,7 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
         this.cacheStatistics = resolveCacheStatistic();
         this.executor = ForkJoinPool.commonPool();
         registerCacheEntryListenersFromConfiguration();
-        registerCacheMXBeanIfRequired(this);
+        registerMBeansIfRequired(this, cacheStatistics);
     }
 
     /**
@@ -121,7 +134,6 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
      *
      * @param key key whose presence in this cache is to be tested.
      * @param key the specified key
-     * @return <tt>true</tt> if this map contains a mapping for the specified key
      * @return
      * @throws NullPointerException  if key is null
      * @throws IllegalStateException if the cache is {@link #isClosed()}
@@ -167,21 +179,30 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
         assertNotClosed();
         requireKeyNotNull(key);
         ExpirableEntry<K, V> entry = null;
+        V value = null;
+        long startTime = System.currentTimeMillis();
         try {
             entry = getEntry(key);
             if (handleExpiryPolicyForAccess(entry)) {
                 return null;
             }
+            // If cache missing and read-through enabled, try to load value by {@link CacheLoader}
+            if (entry == null && isReadThrough()) {
+                value = loadValue(key, true);
+            } else {
+                value = getValue(entry);
+            }
         } catch (Throwable e) {
             logger.severe(e.getMessage());
+        } finally {
+            if (value != null) {
+                cacheStatistics.cacheHits();
+            }
+            cacheStatistics.cacheGets();
+            cacheStatistics.cacheGetsTime(System.currentTimeMillis() - startTime);
         }
 
-        // If cache missing and read-through enabled, try to load value by {@link CacheLoader}
-        if (entry == null && isReadThrough()) {
-            return loadValue(key, true);
-        }
-
-        return getValue(entry);
+        return value;
     }
 
     /**
@@ -476,9 +497,9 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
                 entry = updateEntry(key, value);
             }
         } finally {
+            writeEntryIfWriteThrough(entry);
             cacheStatistics.cachePuts();
             cacheStatistics.cachePutsTime(System.currentTimeMillis() - startTime);
-            writeEntryIfWriteThrough(entry);
         }
     }
 
@@ -534,6 +555,7 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
         assertNotClosed();
         requireKeyNotNull(key);
         boolean removed = false;
+        long startTime = System.currentTimeMillis();
         try {
             ExpirableEntry<K, V> oldEntry = removeEntry(key);
             removed = oldEntry != null;
@@ -542,6 +564,8 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
             }
         } finally {
             deleteIfWriteThrough(key);
+            cacheStatistics.cacheRemovals();
+            cacheStatistics.cacheRemovesTime(System.currentTimeMillis() - startTime);
         }
         return removed;
     }
@@ -692,6 +716,7 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
         assertNotClosed();
         clearEntries();
         defaultFallbackStorage.destroy();
+        cacheStatistics.reset();
     }
 
     @Override
@@ -772,11 +797,6 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
     protected final boolean isStatisticsEnabled() {
         return configuration.isStatisticsEnabled();
     }
-
-    protected final boolean isManagementEnabled() {
-        return configuration.isManagementEnabled();
-    }
-
 
     private CacheStatistics resolveCacheStatistic() {
         return isStatisticsEnabled() ?
@@ -1029,6 +1049,7 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
             V value = entry.getValue();
             removeEntry(key);
             publishExpiredEvent(key, value);
+            cacheStatistics.cacheEvictions();
         }
 
         return expired;
