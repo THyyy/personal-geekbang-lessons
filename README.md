@@ -210,3 +210,61 @@ public ByteBuffer encodeValue(V value) {
 - 通过 Lettuce 实现一套 Redis CacheManager 以及 Cache
 
 具体参考：`org.geektimes.cache.redis.LettuceCache` 和 `org.geektimes.cache.redis.LettuceCacheManager`，详细代码不列出
+
+## 第二模块：Java 开源混合架构
+
+### 第七周
+
+**从本周开始使用 `open-source` 分支开发**
+
+- 使用 `Spring Boot` 来实现一个整合 `Gitee` 或者 `Github` OAuth2 认证
+
+本次作业相对比较简单，主要是 `Spring Security` 的一些配置，基本上就完成了，但是目的还是为了了解 OAuth 2 认证
+
+本次主要是参考 [Spring官网 OAuth2 教程](https://spring.io/guides/tutorials/spring-boot-oauth2/) 进行实现，下面是 OAuth 2 的认证流程：
+
+![OAuth 2 认证流程](http://processon.com/chart_image/5c63c941e4b0641c83f44c0c.png)
+
+
+
+`Spring Security` 的核心配置 `GithubConfigurerAdapter` 配置类：
+
+```java
+@Configuration
+public class GithubConfigurerAdapter extends WebSecurityConfigurerAdapter {
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http.authorizeRequests(a -> a
+                 // 匹配请求放行               
+                .antMatchers("/", "/error", "/webjars/**").permitAll()
+        		// 对其他请求均进行验证，但是没有对验证用户角色做权限管理                       
+                .anyRequest().authenticated() 
+         //退出页面放行                      
+        ).logout(l -> l.logoutSuccessUrl("/").permitAll() 
+         // 配置跨域请求        
+        ).csrf(c -> c.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+         // 异常拦截处理，均返回 403 状态码      
+        ).exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+         // 设置 OAuth2.0 登录，采用默认的 OAuth2LoginConfigurer 配置                   
+        ).oauth2Login(); 
+    }
+}    
+```
+
+因为是通过默认的 `OAuth2LoginConfigurer` 进行实现，配置文件中需要如下配置：
+
+```yaml
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            # 客户端id
+            clientId: github-client-id
+            # 密钥
+            clientSecret: github-secret-key
+```
+
+随即访问在 GitHub 上配置的主页 `http://localhost:8080` 点击 `click here` 即可进行 OAuth 2 认证授权

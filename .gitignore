@@ -37,3 +37,4 @@ gen
 /.extract/
 /java-training-camp/chapter-one/user-platform/*/target/
 .flattened-pom.xml
+/java-training-camp/chapter-one/spring-security-oauth2/target/
