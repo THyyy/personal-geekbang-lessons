@@ -268,3 +268,88 @@ spring:
 ```
 
 随即访问在 GitHub 上配置的主页 `http://localhost:8080` 点击 `click here` 即可进行 OAuth 2 认证授权
+
+### 第八周
+
+- 如何解决多个 `WebSecurityConfigurerAdapter` **Bean** 相同配置相互冲突的问题？
+
+问题原因在于：`WebSecurityConfigurerAdapter#getHttp` 方法
+
+```java
+protected final HttpSecurity getHttp() throws Exception {
+		if (this.http != null) {
+			return this.http;
+		}
+		...
+        // 此处通过 new 的方式构建 HttpSecurity 对象
+		this.http = new HttpSecurity(this.objectPostProcessor, this.authenticationBuilder, sharedObjects);
+		...
+		return this.http;
+	}
+```
+
+因为 `WebSecurityConfigurerAdapter` 在实例化的时候是 new 一个 HttpSecurity 对象，然后将其添加到 `List<SecurityBuilder<? extends SecurityFilterChain>> securityFilterChainBuilders` 集合中，在 `WebSecurity` 构建方法 `performBuild` 中遍历并创建 `FilterChainProxy` 对象：
+
+```java
+@Override
+protected Filter performBuild() throws Exception {
+    	...
+    	// 遍历 securityFilterChainBuilders 列表
+        // 里面的 SecurityBuilder 对象是WebSecurityConfigurerAdapter#init方法添加的
+		for (SecurityBuilder<? extends SecurityFilterChain> securityFilterChainBuilder : this.securityFilterChainBuilders) {
+			securityFilterChains.add(securityFilterChainBuilder.build());
+		}
+    	// 创建 FilterChainProxy 对象
+    	// 并将securityFilterChains设置为FilterChainProxy的filterChains属性
+		FilterChainProxy filterChainProxy = new FilterChainProxy(securityFilterChains);
+		...
+		return result;
+}
+```
+
+在真正的过滤器逻辑中，`FilterChainProxy#doFilter` 方法通过调用 `doFilterInternal` 方法间接调用 `getFilters` 方法获取实际的 `SecurityFilterChain` 过滤器
+
+```java
+private List<Filter> getFilters(HttpServletRequest request) {
+		int count = 0;
+		for (SecurityFilterChain chain : this.filterChains) {
+			if (logger.isTraceEnabled()) {
+				logger.trace(LogMessage.format("Trying to match request against %s (%d/%d)", chain, ++count,
+						this.filterChains.size()));
+			}
+			if (chain.matches(request)) {
+				return chain.getFilters();
+			}
+		}
+		return null;
+	}
+```
+
+从上面代码来看，实际在具体匹配中只会返回第一个匹配的 `SecurityFilterChain` 的过滤器。到此，实际的 `HttpSecurity` 匹配逻辑完成，而作业中的问题是因为实际开发中，开发人员对 `Spring Boot Security` 使用不当导致配置覆盖问题。
+
+具体多个 `HttpSecurity` 配置使用方式可以参考[官方文档](https://docs.spring.io/spring-security/site/docs/current/reference/html5/#multiple-httpsecurity)。
+
+解决方法：所有的配置定义在一个配置类 `com.yuancome.spring.security.oauth2.adapter.GlobalHttpSecurityConfig` 中，根据配置定义顺序从上到下进行顺序限定
+
+```java
+@Configuration
+public class GlobalHttpSecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Bean
+    public SecurityFilterChain filter1(HttpSecurity httpSecurity) throws Exception {
+        return httpSecurity.authorizeRequests(a -> a
+                .antMatchers("/", "/error", "/webjars/**").permitAll()
+                .anyRequest().authenticated() // 对这些请求均进行验证，但是没有对验证用户角色做权限管理
+        ).build();
+    }
+
+    @Bean
+    public SecurityFilterChain filter2(HttpSecurity httpSecurity) throws Exception {
+        return httpSecurity.authorizeRequests(a -> a
+                .antMatchers("/", "/error", "/webjars/**").permitAll()
+                .anyRequest().authenticated() // 对这些请求均进行验证，但是没有对验证用户角色做权限管理
+        ).csrf().disable().build();
+    }
+}
+```
+
