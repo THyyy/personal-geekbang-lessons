@@ -23,6 +23,8 @@
         <module>my-web-mvc</module>
         <module>user-web</module>
         <module>user-data</module>
+        <module>my-commons</module>
+        <module>my-session</module>
     </modules>
 
     <properties>
