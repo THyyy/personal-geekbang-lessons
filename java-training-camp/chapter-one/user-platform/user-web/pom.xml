@@ -52,11 +52,11 @@
             <version>${user-version}</version>
         </dependency>
 
-        <!--<dependency>-->
-        <!--    <groupId>com.yuancome</groupId>-->
-        <!--    <artifactId>my-configuration</artifactId>-->
-        <!--    <version>${user-version}</version>-->
-        <!--</dependency>-->
+        <dependency>
+            <groupId>com.yuancome</groupId>
+            <artifactId>my-session</artifactId>
+            <version>${user-version}</version>
+        </dependency>
 
         <dependency>
             <groupId>com.yuancome</groupId>
