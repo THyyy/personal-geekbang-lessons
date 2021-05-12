@@ -14,45 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.geektimes.session;
+package org.geektimes.configuration.microprofile.config.converter;
 
-import java.util.Set;
+import org.eclipse.microprofile.config.spi.Converter;
 
 /**
- * Session Repository
+ * {@link Class} {@link Converter} implementation
  *
  * @author <a href="mailto:mercyblitz@gmail.com">Mercy</a>
  * @since 1.0.0
+ * Date : 2021-05-06
  */
-public interface SessionRepository {
+public class ClassConverter extends AbstractConverter<Class> {
 
-    // SessionInfo manipulation methods
+    private final ClassLoader classLoader;
 
-    SessionRepository saveSessionInfo(SessionInfo sessionInfo);
+    public ClassConverter() {
+        this(Thread.currentThread().getContextClassLoader());
+    }
 
-    SessionInfo getSessionInfo(String sessionId);
+    public ClassConverter(ClassLoader classLoader) {
+        this.classLoader = classLoader;
+    }
 
-    SessionRepository removeSessionInfo(String sessionId);
-
-    // Attribute manipulation methods
-
-    SessionRepository setAttribute(String sessionId, String name, Object value);
-
-    SessionRepository removeAttribute(String sessionId, String name);
-
-    Object getAttribute(String sessionId, String name);
-
-    Set<String> getAttributeNames(String sessionId);
-
-    // Lifecycle methods
-
-    /**
-     * Initialize
-     */
-    void initialize();
-
-    /**
-     * Destroy
-     */
-    void destroy();
+    @Override
+    protected Class doConvert(String value) throws Throwable {
+        return classLoader.loadClass(value);
+    }
 }

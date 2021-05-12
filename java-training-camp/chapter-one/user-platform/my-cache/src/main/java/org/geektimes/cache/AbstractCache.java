@@ -27,11 +27,7 @@ import org.geektimes.cache.processor.MutableEntryAdapter;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.CacheManager;
-import javax.cache.configuration.CacheEntryListenerConfiguration;
-import javax.cache.configuration.CompleteConfiguration;
-import javax.cache.configuration.Configuration;
-import javax.cache.configuration.Factory;
-import javax.cache.configuration.MutableConfiguration;
+import javax.cache.configuration.*;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.EventType;
 import javax.cache.expiry.Duration;
@@ -44,13 +40,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
@@ -61,10 +51,7 @@ import static org.geektimes.cache.ExpirableEntry.requireKeyNotNull;
 import static org.geektimes.cache.ExpirableEntry.requireValueNotNull;
 import static org.geektimes.cache.configuration.ConfigurationUtils.immutableConfiguration;
 import static org.geektimes.cache.configuration.ConfigurationUtils.mutableConfiguration;
-import static org.geektimes.cache.event.GenericCacheEntryEvent.createdEvent;
-import static org.geektimes.cache.event.GenericCacheEntryEvent.expiredEvent;
-import static org.geektimes.cache.event.GenericCacheEntryEvent.removedEvent;
-import static org.geektimes.cache.event.GenericCacheEntryEvent.updatedEvent;
+import static org.geektimes.cache.event.GenericCacheEntryEvent.*;
 import static org.geektimes.cache.management.ManagementUtils.registerMBeansIfRequired;
 
 /**
@@ -113,6 +100,7 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
         registerCacheEntryListenersFromConfiguration();
         registerMBeansIfRequired(this, cacheStatistics);
     }
+
 
     /**
      * Determines if the {@link Cache} contains an entry for the specified key.
