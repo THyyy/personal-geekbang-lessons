@@ -25,6 +25,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 
@@ -41,11 +43,23 @@ public class RedisCache implements Cache {
 
     private final Jedis jedis;
 
+    /**
+     * 存储的前缀的字节数组
+     */
+    private final byte[] prefixBytes;
+
+    /**
+     * 使用list存储该{@link RedisCache}缓存的所有key
+     */
+    private final byte[] namespaceBytes;
+
     public RedisCache(String name, Jedis jedis) {
         Objects.requireNonNull(name, "The 'name' argument must not be null.");
         Objects.requireNonNull(jedis, "The 'jedis' argument must not be null.");
         this.name = name;
         this.jedis = jedis;
+        prefixBytes = (this.name + ":").getBytes(StandardCharsets.UTF_8);
+        namespaceBytes = ("namespace:" + this.name).getBytes(StandardCharsets.UTF_8);
     }
 
 
@@ -78,9 +92,10 @@ public class RedisCache implements Cache {
 
     @Override
     public void put(Object key, Object value) {
-        byte[] keyBytes = serialize(key);
+        byte[] keyBytes = getActualKeyBytes(key);
         byte[] valueBytes = serialize(value);
         jedis.set(keyBytes, valueBytes);
+        jedis.lpush(namespaceBytes, keyBytes);
     }
 
     @Override
@@ -94,6 +109,11 @@ public class RedisCache implements Cache {
         // Redis 是否支持 namespace
         // name:key
         // String 类型的 key :
+        List<byte[]> list = jedis.lrange(namespaceBytes, 0L, jedis.llen(namespaceBytes));
+        if (list != null && !list.isEmpty()) {
+            list.forEach(jedis::del);
+        }
+        jedis.del(namespaceBytes);
     }
 
     // 是否可以抽象出一套序列化和反序列化的 API
@@ -125,5 +145,30 @@ public class RedisCache implements Cache {
             throw new CacheException(e);
         }
         return value;
+    }
+
+    /**
+     * 获取实际 key 对应的 Byte 数组
+     *
+     * @param key
+     * @return
+     */
+    private byte[] getActualKeyBytes(Object key) {
+        byte[] keyBytes = serialize(key);
+        return getMergeBytes(prefixBytes, keyBytes);
+    }
+
+    /**
+     * 拼接 Byte 数组用于 redis 分组
+     *
+     * @param prefixBytes
+     * @param sourceBytes
+     * @return
+     */
+    protected byte[] getMergeBytes(byte[] prefixBytes, byte[] sourceBytes) {
+        byte[] result = new byte[prefixBytes.length + sourceBytes.length];
+        System.arraycopy(prefixBytes, 0, result, 0, prefixBytes.length);
+        System.arraycopy(sourceBytes, 0, result, prefixBytes.length, sourceBytes.length);
+        return result;
     }
 }

@@ -353,3 +353,74 @@ public class GlobalHttpSecurityConfig extends WebSecurityConfigurerAdapter {
 }
 ```
 
+### 第九周
+
+- 如何清除某个 `Spring Cache` 所有的 Keys 关联的对象(如果 `Redis` 中心化方案 - `Redis + Sentinel`, 如果 `Redis` 去中心化方案 - `Redis Cluster`)
+
+`RedisCache` 在每个缓存值 `push` 的时候保存到 `Reids List` 中，然后该 `Redis Cache` 存储的所有缓存的 `key` ，清除 `RedisCache` 的所有缓存只需要遍历 `Redis List`，获取该 `RedisCache` 关联的所有 `key`，然后依次删除即可。
+
+`RedisCache` 构造函数初始化 `key` 的前缀字节数组和 `Redis List` 的 `key` 的名称。
+
+```
+public RedisCache(String name, Jedis jedis) {
+    Objects.requireNonNull(name, "The 'name' argument must not be null.");
+    Objects.requireNonNull(jedis, "The 'jedis' argument must not be null.");
+    this.name = name;
+    this.jedis = jedis;
+    prefixBytes = (this.name + ":").getBytes(StandardCharsets.UTF_8);
+    namespaceBytes = ("namespace:" + this.name).getBytes(StandardCharsets.UTF_8);
+}
+```
+
+往 `RedisCache` 存数据时，先将 `key` 序列化，然后再加上前缀的字节数组 `prefixBytes`，新的字节数组 `actualKeyBytes` 作为真正的`Redis `的`key`，并将 `actualKeyBytes` 存到 `Redis List` 中。
+
+```java
+public void put(Object key, Object value) {
+    byte[] actualKeyBytes = getActualKeyBytes(key);
+    byte[] valueBytes = serialize(value);
+    jedis.set(actualKeyBytes, valueBytes);
+    jedis.lpush(namespaceBytes, actualKeyBytes);
+}
+
+private byte[] getActualKeyBytes(Object key) {
+    byte[] keyBytes = serialize(key);
+    return getMergeBytes(prefixBytes, keyBytes);
+}
+
+protected byte[] getMergeBytes(byte[] prefixBytes, byte[] sourceBytes) {
+    byte[] result = new byte[prefixBytes.length + sourceBytes.length];
+    System.arraycopy(prefixBytes, 0, result, 0, prefixBytes.length);
+    System.arraycopy(sourceBytes, 0, result, prefixBytes.length, sourceBytes.length);
+    return result;
+}
+```
+
+`RedisCache#clear` 方法先根据 `Redis List` 的缓存的 `key` 列表依次执行删除操作，然后再删除 `Redis List` 自身即可。
+
+```java
+public void clear() {
+    List<byte[]> list = jedis.lrange(namespaceBytes, 0L, jedis.llen(namespaceBytes));
+    if (list != null && !list.isEmpty()) {
+        list.forEach(jedis::del);
+    }
+    jedis.del(namespaceBytes);
+}
+```
+
+- 如何将 `RedisCacheManager` 与 `@Cacheable` 注解打通
+
+将`RedisCacheManager` 与 `@Cacheable` 注解打通主要是通过 `CacheManager` 接口进行实现，可以看出我们的 `RedisCacheManager` 已经实现了 `CacheManager` 接口，只需要将其注入到 `Spring` 容器中即可：
+
+```java
+@Configuration
+public class RedisCacheConfig {
+
+    @Bean
+    public CacheManager redisCacheManager() {
+        String uri = "127.0.0.1";
+        return new RedisCacheManager(uri);
+    }
+}
+```
+
+具体配置肯定不止这些，目前只是作为一个简单的示例进行演示。
