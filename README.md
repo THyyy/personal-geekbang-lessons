@@ -424,3 +424,70 @@ public class RedisCacheConfig {
 ```
 
 具体配置肯定不止这些，目前只是作为一个简单的示例进行演示。
+
+### 第十周
+
+- 完善 `@org.geektimes.projects.user.mybatis.annotation.EnableMyBatis` 实现，尽可能多地注入 `org.mybatis.spring.SqlSessionFactoryBean` 中依赖的组件
+
+根据 `org.mybatis.spring.SqlSessionFactoryBean` 类来看，主要有以下的组件：
+
+```java
+		private static final ResourcePatternResolver RESOURCE_PATTERN_RESOLVER = new PathMatchingResourcePatternResolver();
+    private static final MetadataReaderFactory METADATA_READER_FACTORY = new CachingMetadataReaderFactory();
+    private Resource configLocation;
+    private Configuration configuration;
+    private Resource[] mapperLocations;
+    private DataSource dataSource;
+    private TransactionFactory transactionFactory;
+    private Properties configurationProperties;
+    private SqlSessionFactoryBuilder sqlSessionFactoryBuilder = new SqlSessionFactoryBuilder();
+    private SqlSessionFactory sqlSessionFactory;
+    private String environment = SqlSessionFactoryBean.class.getSimpleName();
+    private boolean failFast;
+    private Interceptor[] plugins;
+    private TypeHandler<?>[] typeHandlers;
+    private String typeHandlersPackage;
+    private Class<? extends TypeHandler> defaultEnumTypeHandler;
+    private Class<?>[] typeAliases;
+    private String typeAliasesPackage;
+    private Class<?> typeAliasesSuperType;
+    private LanguageDriver[] scriptingLanguageDrivers;
+    private Class<? extends LanguageDriver> defaultScriptingLanguageDriver;
+    private DatabaseIdProvider databaseIdProvider;
+    private Class<? extends VFS> vfs;
+    private Cache cache;
+    private ObjectFactory objectFactory;
+    private ObjectWrapperFactory objectWrapperFactory;
+```
+
+使用时一般不会全部用到上面的所有组件参数，比较常用的就是 `configLocation`，`mapperLocations`，`dataSource` 等，由于时间关系就先添加简单的 `typeHandlersPackage`，`typeAliasesPackage`， 这两个分别指定了`类型处理包` 和 `类型别名包`。
+
+```java
+public @interface EnableMyBatis {
+    String typeHandlersPackage() default "";
+
+    String typeAliasesPackage() default "";
+}
+```
+
+然后在 `MyBatisBeanDefinitionRegistrar#registerBeanDefinitions` 方法中补充：
+
+```java
+beanDefinitionBuilder.addPropertyValue("typeHandlersPackage", attributes.get("typeHandlersPackage"));
+beanDefinitionBuilder.addPropertyValue("typeAliasesPackage", attributes.get("typeAliasesPackage"));
+```
+
+此外还完善了 `configurationProperties` ：
+
+```java
+// 获取配置文件路径
+String configLocation = (String) attributes.get("configLocation");
+beanDefinitionBuilder.addPropertyValue("configLocation", configLocation);
+	// 根据配置文件路径获取配置文件源
+	if (StringUtils.isNotEmpty(configLocation)) {
+		Properties properties = resolveConfigurationProperties(configLocation);
+    beanDefinitionBuilder.addPropertyValue("configurationProperties", properties);
+  }
+```
+
+至此，简单地完成了作业内容。
