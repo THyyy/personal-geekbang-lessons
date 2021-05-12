@@ -16,6 +16,7 @@
  */
 package org.geektimes.projects.user.mybatis.annotation;
 
+import org.apache.commons.lang.StringUtils;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
@@ -25,7 +26,11 @@ import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.env.Environment;
 import org.springframework.core.type.AnnotationMetadata;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
+import java.util.Properties;
+import java.util.logging.Logger;
 
 import static org.springframework.beans.factory.support.BeanDefinitionBuilder.genericBeanDefinition;
 
@@ -37,6 +42,8 @@ import static org.springframework.beans.factory.support.BeanDefinitionBuilder.ge
  * Date : 2021-05-06
  */
 public class MyBatisBeanDefinitionRegistrar implements ImportBeanDefinitionRegistrar, EnvironmentAware {
+
+    protected final Logger logger = Logger.getLogger(getClass().getName());
 
     private Environment environment;
 
@@ -52,16 +59,35 @@ public class MyBatisBeanDefinitionRegistrar implements ImportBeanDefinitionRegis
          */
         beanDefinitionBuilder.addPropertyReference("dataSource", (String) attributes.get("dataSource"));
         // Spring String 类型可以自动转化 Spring Resource
-        beanDefinitionBuilder.addPropertyValue("configLocation", attributes.get("configLocation"));
+        String configLocation = (String) attributes.get("configLocation");
+        beanDefinitionBuilder.addPropertyValue("configLocation", configLocation);
+        if (StringUtils.isNotEmpty(configLocation)) {
+            Properties properties = resolveConfigurationProperties(configLocation);
+            beanDefinitionBuilder.addPropertyValue("configurationProperties", properties);
+        }
         beanDefinitionBuilder.addPropertyValue("mapperLocations", attributes.get("mapperLocations"));
         beanDefinitionBuilder.addPropertyValue("environment", resolvePlaceholder(attributes.get("environment")));
         // 自行添加其他属性
-
+        beanDefinitionBuilder.addPropertyValue("typeHandlersPackage", attributes.get("typeHandlersPackage"));
+        beanDefinitionBuilder.addPropertyValue("typeAliasesPackage", attributes.get("typeAliasesPackage"));
         // SqlSessionFactoryBean 的 BeanDefinition
         BeanDefinition beanDefinition = beanDefinitionBuilder.getBeanDefinition();
 
         String beanName = (String) attributes.get("value");
         registry.registerBeanDefinition(beanName, beanDefinition);
+    }
+
+    private Properties resolveConfigurationProperties(String configLocation) {
+        InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream(configLocation);
+        Properties properties = new Properties();
+        try {
+            properties.load(inputStream);
+        }
+        catch (IOException e) {
+            logger.severe("can't find any properties named [" + configLocation + "]," + e);
+            return null;
+        }
+        return properties;
     }
 
     private Object resolvePlaceholder(Object value) {
