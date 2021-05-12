@@ -112,7 +112,12 @@ public class ConfigurableCachingProvider implements CachingProvider {
     public CacheManager getCacheManager(URI uri, ClassLoader classLoader, Properties properties) {
         URI actualURI = getOrDefault(uri, this::getDefaultURI);
         ClassLoader actualClassLoader = getOrDefault(classLoader, this::getDefaultClassLoader);
-        Properties actualProperties = getOrDefault(properties, this::getDefaultProperties);
+        // set default properties as "default"
+        Properties actualProperties = new Properties(getDefaultProperties());
+        // merge external properties
+        if (properties != null && !properties.isEmpty()) {
+            actualProperties.putAll(properties);
+        }
 
         String key = generateCacheManagerKey(actualURI, actualClassLoader, actualProperties);
 
