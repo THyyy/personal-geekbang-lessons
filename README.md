@@ -491,3 +491,22 @@ beanDefinitionBuilder.addPropertyValue("configLocation", configLocation);
 ```
 
 至此，简单地完成了作业内容。
+
+### 第十一周
+
+- 通过 Java 实现两种 (以及) 更多的一致性 Hash 算法 (可选) 实现服务节点动态更新
+
+具体实现为`spring-security-oauth2` 的 `src/main/java/com/yuancome/spring/security/loadbalance` 包下 `hash` 子包为一致性哈希算法实现，`random` 子包为随机算法实现。
+
+通用的代码逻辑：
+
+`Node` 节点类：主要描述服务器节点的元数据信息
+
+`Cluster` 接口：主要作为节点增减删除操作行为的抽象接口
+
+`AbstractCluster` 抽象类：实现了 `Cluster` 接口，主要补充一些节点操作方法，暂时无抽象方法，仅作为钩子类用于后续扩展
+
+
+
+
+
