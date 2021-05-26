@@ -25,6 +25,8 @@
         <module>user-data</module>
         <module>my-commons</module>
         <module>my-session</module>
+        <module>my-mybatis</module>
+        <module>my-spring-boot-mybatis</module>
     </modules>
 
     <properties>
