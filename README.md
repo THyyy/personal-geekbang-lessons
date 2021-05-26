@@ -506,7 +506,13 @@ beanDefinitionBuilder.addPropertyValue("configLocation", configLocation);
 
 `AbstractCluster` 抽象类：实现了 `Cluster` 接口，主要补充一些节点操作方法，暂时无抽象方法，仅作为钩子类用于后续扩展
 
+### 第十二周
 
+- 将上次 MyBatis@Enable 模块驱动，封装成 SpringBoot Starter 方式
 
+将上次的 MyBatis@Enable 模块驱动相关类抽取成 `my-mybatis` 模块，然后添加 `EnableMyBatisExample` 类以及 `META-INF/spring.factories` 和 `META-INF/spring-autoconfigure-metadata.properties` 配置文件，其中  `META-INF/spring.factories` 配置文件为 SpringBoot Starter 模块的自动配置文件，而 `META-INF/spring-autoconfigure-metadata.properties` 配置文件则是 `EnableMyBatisExample` 类的前置配置类，主要是注入一些条件 Bean。
 
+到此时，封装已经基本完成，而 `my-spring-boot-mybatis` 则是使用`my-mybatis` 模块 SpringBoot Starter 方式的 demo。
+
+具体代码不详细展开。
 
