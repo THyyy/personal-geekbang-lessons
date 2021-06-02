@@ -516,3 +516,10 @@ beanDefinitionBuilder.addPropertyValue("configLocation", configLocation);
 
 具体代码不详细展开。
 
+### 第十三周
+
+- 基于文件系统为 Spring Cloud 提供 PropertySourceLocator 实现
+  - 配置文件命名规则 (META-INF/config/default.properties 或者 META-INF/config/default.yaml)
+
+具体实现代码为：`spring-cloud-config-server` 模块
+

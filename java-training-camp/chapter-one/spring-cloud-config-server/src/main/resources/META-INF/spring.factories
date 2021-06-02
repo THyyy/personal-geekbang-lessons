@@ -1,0 +1,3 @@
+org.springframework.cloud.bootstrap.BootstrapConfiguration=\
+ com.yuancome.spring.cloud.config.server.environment.FileRepositoryConfiguration\
+com.yuancome.spring.cloud.config.server.environment.FileEnvironmentRepositoryProperties
