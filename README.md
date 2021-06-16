@@ -523,3 +523,149 @@ beanDefinitionBuilder.addPropertyValue("configLocation", configLocation);
 
 具体实现代码为：`spring-cloud-config-server` 模块
 
+### 第十五周
+
+- 通过 GraalVM 将一个简单 Spring Boot 工程构建为 Native Image
+  - 代码要自己手写 @Controller @RequestMapping("/helloworld")
+  - 相关插件可以参考 Spring Native Samples
+  - (可选) 理解 Hint 注解的使用
+
+主要参考文档：
+
+[Spring Native 官方文档](https://docs.spring.io/spring-native/docs/0.10.0/reference/htmlsingle/#getting-started)
+
+[GraalVM 官网](https://www.graalvm.org/docs/getting-started/)
+
+核心配置：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.5.1</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+    <groupId>com.yuancome</groupId>
+    <artifactId>graalvm-test</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>graalvm-test</name>
+    <description>Demo project for Spring Boot</description>
+
+    <properties>
+        <java.version>11</java.version>
+        <repackage.classifier/>
+        <spring-native.version>0.10.0</spring-native.version>
+    </properties>
+
+    <dependencies>
+				...
+        <dependency>
+            <groupId>org.springframework.experimental</groupId>
+            <artifactId>spring-native</artifactId>
+            <version>${spring-native.version}</version>
+        </dependency>
+				...
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <classifier>${repackage.classifier}</classifier>
+                    <image>
+                        <builder>paketobuildpacks/builder:tiny</builder>
+                        <env>
+                            <BP_NATIVE_IMAGE>true</BP_NATIVE_IMAGE>
+                        </env>
+                    </image>
+                </configuration>
+            </plugin>
+            <!--Add the Spring AOT plugin-->
+            <plugin>
+                <groupId>org.springframework.experimental</groupId>
+                <artifactId>spring-aot-maven-plugin</artifactId>
+                <version>${spring-native.version}</version>
+                <executions>
+                    <execution>
+                        <id>test-generate</id>
+                        <goals>
+                            <goal>test-generate</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>generate</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+  
+    <profiles>
+        <profile>
+            <id>native</id>
+            <properties>
+                <repackage.classifier>exec</repackage.classifier>
+                <native-buildtools.version>0.9.0</native-buildtools.version>
+            </properties>
+            <dependencies>
+                <!--Add the GraalVM Buildtools plugin-->
+                <dependency>
+                    <groupId>org.graalvm.buildtools</groupId>
+                    <artifactId>junit-platform-native</artifactId>
+                    <version>${native-buildtools.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                     <!--Add the native-maven-plugin for build & package-->
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                        <version>${native-buildtools.version}</version>
+                        <executions>
+                            <execution>
+                                <id>test-native</id>
+                                <phase>test</phase>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>build-native</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>build</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>
+```
+
+核心主要是在 `POM` 文件的配置上，安装过程比较慢，需要代理。
+
+运行方法：
+
+```bash
+// 编译打包文件
+mvn -Pnative package
+
+// 直接执行打包好的文件
+graalvm-test/target/graalvm-test 
+```
+
+根据运行比较，`GraalVM` 编译耗时在 `4分钟` 左右，但是可以提高启动速度约 `5 - 6` 倍。实际可以根据生产场景进行考虑使用。
