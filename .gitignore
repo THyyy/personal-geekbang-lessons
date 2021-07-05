@@ -33,8 +33,9 @@ hs_err_pid*
 out
 gen
 # Derby DB data Directory
-/java-training-camp/chapter-one/user-platform/user-web/db/
+/java-training-camp-zero/chapter-one/user-platform/user-web/db/
 /.extract/
-/java-training-camp/chapter-one/user-platform/*/target/
+/java-training-camp-zero/chapter-one/user-platform/*/target/
 .flattened-pom.xml
-/java-training-camp/chapter-one/spring-security-oauth2/target/
+/java-training-camp-zero/chapter-one/spring-security-oauth2/target/
+/java-training-camp-zero/chapter-one/graalvm-test/target/
