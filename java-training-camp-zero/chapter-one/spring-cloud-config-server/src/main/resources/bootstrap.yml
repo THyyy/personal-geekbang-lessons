@@ -1,0 +1,14 @@
+spring:
+  profiles:
+    active: 'native,file'
+  config:
+    name: yuancome
+  application:
+    name: yuancome-spring-cloud-application
+  cloud:
+    config:
+      profile: file
+      server:
+        file:
+          file-path: 'META-INF/config/default.properties'
+        bootstrap: true

@@ -210,3 +210,462 @@ public ByteBuffer encodeValue(V value) {
 - 通过 Lettuce 实现一套 Redis CacheManager 以及 Cache
 
 具体参考：`org.geektimes.cache.redis.LettuceCache` 和 `org.geektimes.cache.redis.LettuceCacheManager`，详细代码不列出
+
+## 第二模块：Java 开源混合架构
+
+### 第七周
+
+**从本周开始使用 `open-source` 分支开发**
+
+- 使用 `Spring Boot` 来实现一个整合 `Gitee` 或者 `Github` OAuth2 认证
+
+本次作业相对比较简单，主要是 `Spring Security` 的一些配置，基本上就完成了，但是目的还是为了了解 OAuth 2 认证
+
+本次主要是参考 [Spring官网 OAuth2 教程](https://spring.io/guides/tutorials/spring-boot-oauth2/) 进行实现，下面是 OAuth 2 的认证流程：
+
+![OAuth 2 认证流程](http://processon.com/chart_image/5c63c941e4b0641c83f44c0c.png)
+
+
+
+`Spring Security` 的核心配置 `GithubConfigurerAdapter` 配置类：
+
+```java
+@Configuration
+public class GithubConfigurerAdapter extends WebSecurityConfigurerAdapter {
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http.authorizeRequests(a -> a
+                 // 匹配请求放行               
+                .antMatchers("/", "/error", "/webjars/**").permitAll()
+        		// 对其他请求均进行验证，但是没有对验证用户角色做权限管理                       
+                .anyRequest().authenticated() 
+         //退出页面放行                      
+        ).logout(l -> l.logoutSuccessUrl("/").permitAll() 
+         // 配置跨域请求        
+        ).csrf(c -> c.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+         // 异常拦截处理，均返回 403 状态码      
+        ).exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+         // 设置 OAuth2.0 登录，采用默认的 OAuth2LoginConfigurer 配置                   
+        ).oauth2Login(); 
+    }
+}    
+```
+
+因为是通过默认的 `OAuth2LoginConfigurer` 进行实现，配置文件中需要如下配置：
+
+```yaml
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            # 客户端id
+            clientId: github-client-id
+            # 密钥
+            clientSecret: github-secret-key
+```
+
+随即访问在 GitHub 上配置的主页 `http://localhost:8080` 点击 `click here` 即可进行 OAuth 2 认证授权
+
+### 第八周
+
+- 如何解决多个 `WebSecurityConfigurerAdapter` **Bean** 相同配置相互冲突的问题？
+
+问题原因在于：`WebSecurityConfigurerAdapter#getHttp` 方法
+
+```java
+protected final HttpSecurity getHttp() throws Exception {
+		if (this.http != null) {
+			return this.http;
+		}
+		...
+        // 此处通过 new 的方式构建 HttpSecurity 对象
+		this.http = new HttpSecurity(this.objectPostProcessor, this.authenticationBuilder, sharedObjects);
+		...
+		return this.http;
+	}
+```
+
+因为 `WebSecurityConfigurerAdapter` 在实例化的时候是 new 一个 HttpSecurity 对象，然后将其添加到 `List<SecurityBuilder<? extends SecurityFilterChain>> securityFilterChainBuilders` 集合中，在 `WebSecurity` 构建方法 `performBuild` 中遍历并创建 `FilterChainProxy` 对象：
+
+```java
+@Override
+protected Filter performBuild() throws Exception {
+    	...
+    	// 遍历 securityFilterChainBuilders 列表
+        // 里面的 SecurityBuilder 对象是WebSecurityConfigurerAdapter#init方法添加的
+		for (SecurityBuilder<? extends SecurityFilterChain> securityFilterChainBuilder : this.securityFilterChainBuilders) {
+			securityFilterChains.add(securityFilterChainBuilder.build());
+		}
+    	// 创建 FilterChainProxy 对象
+    	// 并将securityFilterChains设置为FilterChainProxy的filterChains属性
+		FilterChainProxy filterChainProxy = new FilterChainProxy(securityFilterChains);
+		...
+		return result;
+}
+```
+
+在真正的过滤器逻辑中，`FilterChainProxy#doFilter` 方法通过调用 `doFilterInternal` 方法间接调用 `getFilters` 方法获取实际的 `SecurityFilterChain` 过滤器
+
+```java
+private List<Filter> getFilters(HttpServletRequest request) {
+		int count = 0;
+		for (SecurityFilterChain chain : this.filterChains) {
+			if (logger.isTraceEnabled()) {
+				logger.trace(LogMessage.format("Trying to match request against %s (%d/%d)", chain, ++count,
+						this.filterChains.size()));
+			}
+			if (chain.matches(request)) {
+				return chain.getFilters();
+			}
+		}
+		return null;
+	}
+```
+
+从上面代码来看，实际在具体匹配中只会返回第一个匹配的 `SecurityFilterChain` 的过滤器。到此，实际的 `HttpSecurity` 匹配逻辑完成，而作业中的问题是因为实际开发中，开发人员对 `Spring Boot Security` 使用不当导致配置覆盖问题。
+
+具体多个 `HttpSecurity` 配置使用方式可以参考[官方文档](https://docs.spring.io/spring-security/site/docs/current/reference/html5/#multiple-httpsecurity)。
+
+解决方法：所有的配置定义在一个配置类 `com.yuancome.spring.security.oauth2.adapter.GlobalHttpSecurityConfig` 中，根据配置定义顺序从上到下进行顺序限定
+
+```java
+@Configuration
+public class GlobalHttpSecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Bean
+    public SecurityFilterChain filter1(HttpSecurity httpSecurity) throws Exception {
+        return httpSecurity.authorizeRequests(a -> a
+                .antMatchers("/", "/error", "/webjars/**").permitAll()
+                .anyRequest().authenticated() // 对这些请求均进行验证，但是没有对验证用户角色做权限管理
+        ).build();
+    }
+
+    @Bean
+    public SecurityFilterChain filter2(HttpSecurity httpSecurity) throws Exception {
+        return httpSecurity.authorizeRequests(a -> a
+                .antMatchers("/", "/error", "/webjars/**").permitAll()
+                .anyRequest().authenticated() // 对这些请求均进行验证，但是没有对验证用户角色做权限管理
+        ).csrf().disable().build();
+    }
+}
+```
+
+### 第九周
+
+- 如何清除某个 `Spring Cache` 所有的 Keys 关联的对象(如果 `Redis` 中心化方案 - `Redis + Sentinel`, 如果 `Redis` 去中心化方案 - `Redis Cluster`)
+
+`RedisCache` 在每个缓存值 `push` 的时候保存到 `Reids List` 中，然后该 `Redis Cache` 存储的所有缓存的 `key` ，清除 `RedisCache` 的所有缓存只需要遍历 `Redis List`，获取该 `RedisCache` 关联的所有 `key`，然后依次删除即可。
+
+`RedisCache` 构造函数初始化 `key` 的前缀字节数组和 `Redis List` 的 `key` 的名称。
+
+```
+public RedisCache(String name, Jedis jedis) {
+    Objects.requireNonNull(name, "The 'name' argument must not be null.");
+    Objects.requireNonNull(jedis, "The 'jedis' argument must not be null.");
+    this.name = name;
+    this.jedis = jedis;
+    prefixBytes = (this.name + ":").getBytes(StandardCharsets.UTF_8);
+    namespaceBytes = ("namespace:" + this.name).getBytes(StandardCharsets.UTF_8);
+}
+```
+
+往 `RedisCache` 存数据时，先将 `key` 序列化，然后再加上前缀的字节数组 `prefixBytes`，新的字节数组 `actualKeyBytes` 作为真正的`Redis `的`key`，并将 `actualKeyBytes` 存到 `Redis List` 中。
+
+```java
+public void put(Object key, Object value) {
+    byte[] actualKeyBytes = getActualKeyBytes(key);
+    byte[] valueBytes = serialize(value);
+    jedis.set(actualKeyBytes, valueBytes);
+    jedis.lpush(namespaceBytes, actualKeyBytes);
+}
+
+private byte[] getActualKeyBytes(Object key) {
+    byte[] keyBytes = serialize(key);
+    return getMergeBytes(prefixBytes, keyBytes);
+}
+
+protected byte[] getMergeBytes(byte[] prefixBytes, byte[] sourceBytes) {
+    byte[] result = new byte[prefixBytes.length + sourceBytes.length];
+    System.arraycopy(prefixBytes, 0, result, 0, prefixBytes.length);
+    System.arraycopy(sourceBytes, 0, result, prefixBytes.length, sourceBytes.length);
+    return result;
+}
+```
+
+`RedisCache#clear` 方法先根据 `Redis List` 的缓存的 `key` 列表依次执行删除操作，然后再删除 `Redis List` 自身即可。
+
+```java
+public void clear() {
+    List<byte[]> list = jedis.lrange(namespaceBytes, 0L, jedis.llen(namespaceBytes));
+    if (list != null && !list.isEmpty()) {
+        list.forEach(jedis::del);
+    }
+    jedis.del(namespaceBytes);
+}
+```
+
+- 如何将 `RedisCacheManager` 与 `@Cacheable` 注解打通
+
+将`RedisCacheManager` 与 `@Cacheable` 注解打通主要是通过 `CacheManager` 接口进行实现，可以看出我们的 `RedisCacheManager` 已经实现了 `CacheManager` 接口，只需要将其注入到 `Spring` 容器中即可：
+
+```java
+@Configuration
+public class RedisCacheConfig {
+
+    @Bean
+    public CacheManager redisCacheManager() {
+        String uri = "127.0.0.1";
+        return new RedisCacheManager(uri);
+    }
+}
+```
+
+具体配置肯定不止这些，目前只是作为一个简单的示例进行演示。
+
+### 第十周
+
+- 完善 `@org.geektimes.projects.user.mybatis.annotation.EnableMyBatis` 实现，尽可能多地注入 `org.mybatis.spring.SqlSessionFactoryBean` 中依赖的组件
+
+根据 `org.mybatis.spring.SqlSessionFactoryBean` 类来看，主要有以下的组件：
+
+```java
+		private static final ResourcePatternResolver RESOURCE_PATTERN_RESOLVER = new PathMatchingResourcePatternResolver();
+    private static final MetadataReaderFactory METADATA_READER_FACTORY = new CachingMetadataReaderFactory();
+    private Resource configLocation;
+    private Configuration configuration;
+    private Resource[] mapperLocations;
+    private DataSource dataSource;
+    private TransactionFactory transactionFactory;
+    private Properties configurationProperties;
+    private SqlSessionFactoryBuilder sqlSessionFactoryBuilder = new SqlSessionFactoryBuilder();
+    private SqlSessionFactory sqlSessionFactory;
+    private String environment = SqlSessionFactoryBean.class.getSimpleName();
+    private boolean failFast;
+    private Interceptor[] plugins;
+    private TypeHandler<?>[] typeHandlers;
+    private String typeHandlersPackage;
+    private Class<? extends TypeHandler> defaultEnumTypeHandler;
+    private Class<?>[] typeAliases;
+    private String typeAliasesPackage;
+    private Class<?> typeAliasesSuperType;
+    private LanguageDriver[] scriptingLanguageDrivers;
+    private Class<? extends LanguageDriver> defaultScriptingLanguageDriver;
+    private DatabaseIdProvider databaseIdProvider;
+    private Class<? extends VFS> vfs;
+    private Cache cache;
+    private ObjectFactory objectFactory;
+    private ObjectWrapperFactory objectWrapperFactory;
+```
+
+使用时一般不会全部用到上面的所有组件参数，比较常用的就是 `configLocation`，`mapperLocations`，`dataSource` 等，由于时间关系就先添加简单的 `typeHandlersPackage`，`typeAliasesPackage`， 这两个分别指定了`类型处理包` 和 `类型别名包`。
+
+```java
+public @interface EnableMyBatis {
+    String typeHandlersPackage() default "";
+
+    String typeAliasesPackage() default "";
+}
+```
+
+然后在 `MyBatisBeanDefinitionRegistrar#registerBeanDefinitions` 方法中补充：
+
+```java
+beanDefinitionBuilder.addPropertyValue("typeHandlersPackage", attributes.get("typeHandlersPackage"));
+beanDefinitionBuilder.addPropertyValue("typeAliasesPackage", attributes.get("typeAliasesPackage"));
+```
+
+此外还完善了 `configurationProperties` ：
+
+```java
+// 获取配置文件路径
+String configLocation = (String) attributes.get("configLocation");
+beanDefinitionBuilder.addPropertyValue("configLocation", configLocation);
+	// 根据配置文件路径获取配置文件源
+	if (StringUtils.isNotEmpty(configLocation)) {
+		Properties properties = resolveConfigurationProperties(configLocation);
+    beanDefinitionBuilder.addPropertyValue("configurationProperties", properties);
+  }
+```
+
+至此，简单地完成了作业内容。
+
+### 第十一周
+
+- 通过 Java 实现两种 (以及) 更多的一致性 Hash 算法 (可选) 实现服务节点动态更新
+
+具体实现为`spring-security-oauth2` 的 `src/main/java/com/yuancome/spring/security/loadbalance` 包下 `hash` 子包为一致性哈希算法实现，`random` 子包为随机算法实现。
+
+通用的代码逻辑：
+
+`Node` 节点类：主要描述服务器节点的元数据信息
+
+`Cluster` 接口：主要作为节点增减删除操作行为的抽象接口
+
+`AbstractCluster` 抽象类：实现了 `Cluster` 接口，主要补充一些节点操作方法，暂时无抽象方法，仅作为钩子类用于后续扩展
+
+### 第十二周
+
+- 将上次 MyBatis@Enable 模块驱动，封装成 SpringBoot Starter 方式
+
+将上次的 MyBatis@Enable 模块驱动相关类抽取成 `my-mybatis` 模块，然后添加 `EnableMyBatisExample` 类以及 `META-INF/spring.factories` 和 `META-INF/spring-autoconfigure-metadata.properties` 配置文件，其中  `META-INF/spring.factories` 配置文件为 SpringBoot Starter 模块的自动配置文件，而 `META-INF/spring-autoconfigure-metadata.properties` 配置文件则是 `EnableMyBatisExample` 类的前置配置类，主要是注入一些条件 Bean。
+
+到此时，封装已经基本完成，而 `my-spring-boot-mybatis` 则是使用`my-mybatis` 模块 SpringBoot Starter 方式的 demo。
+
+具体代码不详细展开。
+
+### 第十三周
+
+- 基于文件系统为 Spring Cloud 提供 PropertySourceLocator 实现
+  - 配置文件命名规则 (META-INF/config/default.properties 或者 META-INF/config/default.yaml)
+
+具体实现代码为：`spring-cloud-config-server` 模块
+
+### 第十五周
+
+- 通过 GraalVM 将一个简单 Spring Boot 工程构建为 Native Image
+  - 代码要自己手写 @Controller @RequestMapping("/helloworld")
+  - 相关插件可以参考 Spring Native Samples
+  - (可选) 理解 Hint 注解的使用
+
+主要参考文档：
+
+[Spring Native 官方文档](https://docs.spring.io/spring-native/docs/0.10.0/reference/htmlsingle/#getting-started)
+
+[GraalVM 官网](https://www.graalvm.org/docs/getting-started/)
+
+核心配置：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.5.1</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+    <groupId>com.yuancome</groupId>
+    <artifactId>graalvm-test</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>graalvm-test</name>
+    <description>Demo project for Spring Boot</description>
+
+    <properties>
+        <java.version>11</java.version>
+        <repackage.classifier/>
+        <spring-native.version>0.10.0</spring-native.version>
+    </properties>
+
+    <dependencies>
+				...
+        <dependency>
+            <groupId>org.springframework.experimental</groupId>
+            <artifactId>spring-native</artifactId>
+            <version>${spring-native.version}</version>
+        </dependency>
+				...
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <classifier>${repackage.classifier}</classifier>
+                    <image>
+                        <builder>paketobuildpacks/builder:tiny</builder>
+                        <env>
+                            <BP_NATIVE_IMAGE>true</BP_NATIVE_IMAGE>
+                        </env>
+                    </image>
+                </configuration>
+            </plugin>
+            <!--Add the Spring AOT plugin-->
+            <plugin>
+                <groupId>org.springframework.experimental</groupId>
+                <artifactId>spring-aot-maven-plugin</artifactId>
+                <version>${spring-native.version}</version>
+                <executions>
+                    <execution>
+                        <id>test-generate</id>
+                        <goals>
+                            <goal>test-generate</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>generate</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+  
+    <profiles>
+        <profile>
+            <id>native</id>
+            <properties>
+                <repackage.classifier>exec</repackage.classifier>
+                <native-buildtools.version>0.9.0</native-buildtools.version>
+            </properties>
+            <dependencies>
+                <!--Add the GraalVM Buildtools plugin-->
+                <dependency>
+                    <groupId>org.graalvm.buildtools</groupId>
+                    <artifactId>junit-platform-native</artifactId>
+                    <version>${native-buildtools.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                     <!--Add the native-maven-plugin for build & package-->
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                        <version>${native-buildtools.version}</version>
+                        <executions>
+                            <execution>
+                                <id>test-native</id>
+                                <phase>test</phase>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>build-native</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>build</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>
+```
+
+核心主要是在 `POM` 文件的配置上，安装过程比较慢，需要代理。
+
+运行方法：
+
+```bash
+// 编译打包文件
+mvn -Pnative package
+
+// 直接执行打包好的文件
+graalvm-test/target/graalvm-test 
+```
+
+根据运行比较，`GraalVM` 编译耗时在 `4分钟` 左右，但是可以提高启动速度约 `5 - 6` 倍。实际可以根据生产场景进行考虑使用。
