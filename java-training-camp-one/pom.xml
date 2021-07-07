@@ -25,6 +25,7 @@
         <module>middleware-frameworks</module>
         <module>user-platform</module>
         <module>shopizer</module>
+        <module>servlet-demo-for-tag</module>
     </modules>
 
     <properties>
@@ -42,6 +43,7 @@
         <javax.cache-api.version>1.1.1</javax.cache-api.version>
         <javax.interceptor-api.version>1.2</javax.interceptor-api.version>
         <javax.mail.version>1.4.7</javax.mail.version>
+        <javax.jsp-api.version>2.3.0</javax.jsp-api.version>
 
         <!-- MicroProfile 版本-->
         <microprofile-config-api.version>2.0</microprofile-config-api.version>
@@ -190,6 +192,12 @@
                 <groupId>javax.mail</groupId>
                 <artifactId>mail</artifactId>
                 <version>${javax.mail.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>javax.servlet.jsp</groupId>
+                <artifactId>javax.servlet.jsp-api</artifactId>
+                <version>${javax.jsp-api.version}</version>
             </dependency>
 
             <!-- MicroProfile -->
