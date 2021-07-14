@@ -39,3 +39,4 @@ gen
 .flattened-pom.xml
 /java-training-camp-zero/chapter-one/spring-security-oauth2/target/
 /java-training-camp-zero/chapter-one/graalvm-test/target/
+*/target/

@@ -12,8 +12,8 @@
     <artifactId>java-training-camp-one</artifactId>
     <name>java-training-camp-one</name>
     <version>${revision}</version>
-
     <packaging>pom</packaging>
+
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>
@@ -43,7 +43,6 @@
         <javax.cache-api.version>1.1.1</javax.cache-api.version>
         <javax.interceptor-api.version>1.2</javax.interceptor-api.version>
         <javax.mail.version>1.4.7</javax.mail.version>
-        <javax.jsp-api.version>2.3.0</javax.jsp-api.version>
 
         <!-- MicroProfile 版本-->
         <microprofile-config-api.version>2.0</microprofile-config-api.version>
@@ -81,6 +80,7 @@
         <netty.version>4.1.65.Final</netty.version>
         <swagger.version>2.9.2</swagger.version>
         <mysql.jdbc.version>8.0.21</mysql.jdbc.version>
+        <archaius.version>0.6.0</archaius.version>
 
         <!-- Spring 依赖版本 -->
         <spring-boot.version>2.4.5</spring-boot.version>
@@ -194,12 +194,6 @@
                 <version>${javax.mail.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>javax.servlet.jsp</groupId>
-                <artifactId>javax.servlet.jsp-api</artifactId>
-                <version>${javax.jsp-api.version}</version>
-            </dependency>
-
             <!-- MicroProfile -->
             <dependency>
                 <groupId>org.eclipse.microprofile.config</groupId>
@@ -305,6 +299,13 @@
                         <artifactId>servlet-api</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+
+            <!-- Netflix -->
+            <dependency>
+                <groupId>com.netflix.archaius</groupId>
+                <artifactId>archaius-core</artifactId>
+                <version>${archaius.version}</version>
             </dependency>
 
             <!-- Guava -->
