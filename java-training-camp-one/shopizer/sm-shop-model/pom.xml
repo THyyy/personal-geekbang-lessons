@@ -24,22 +24,22 @@
   </developers>
 
   <dependencies>
-  
+
     <!-- sm-core-model -->
     <dependency>
       <groupId>com.yuancome</groupId>
       <artifactId>sm-core-model</artifactId>
     </dependency>
-    
+
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
     </dependency>
-    
-	<dependency>
-		<groupId>org.springframework</groupId>
-		<artifactId>spring-webmvc</artifactId>
-	</dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-webmvc</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>javax.annotation</groupId>
@@ -50,6 +50,28 @@
     <dependency>
       <groupId>io.springfox</groupId>
       <artifactId>springfox-swagger2</artifactId>
+    </dependency>
+
+    <!-- Apache Commons Validator -->
+    <dependency>
+      <groupId>commons-validator</groupId>
+      <artifactId>commons-validator</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>commons-collections</groupId>
+      <artifactId>commons-collections</artifactId>
+    </dependency>
+
+    <!-- Bean Validation -->
+    <dependency>
+      <groupId>org.hibernate.validator</groupId>
+      <artifactId>hibernate-validator</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.glassfish</groupId>
+      <artifactId>jakarta.el</artifactId>
     </dependency>
 
   </dependencies>
@@ -94,25 +116,25 @@
         </executions>
       </plugin>
       <!--OSSRH -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>attach-javadocs</id>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-            <configuration>
-              <additionalparam>${javadoc.opts}</additionalparam>
-              <doclint>none</doclint>
-              <source>8</source>
-    		  <detectJavaApiLink>false</detectJavaApiLink>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
- 
+      <!--<plugin>-->
+      <!--  <groupId>org.apache.maven.plugins</groupId>-->
+      <!--  <artifactId>maven-javadoc-plugin</artifactId>-->
+      <!--  <executions>-->
+      <!--    <execution>-->
+      <!--      <id>attach-javadocs</id>-->
+      <!--      <goals>-->
+      <!--        <goal>jar</goal>-->
+      <!--      </goals>-->
+      <!--      <configuration>-->
+      <!--        <additionalparam>${javadoc.opts}</additionalparam>-->
+      <!--        <doclint>none</doclint>-->
+      <!--        <source>8</source>-->
+      <!--        <detectJavaApiLink>false</detectJavaApiLink>-->
+      <!--      </configuration>-->
+      <!--    </execution>-->
+      <!--  </executions>-->
+      <!--</plugin>-->
+
       <!--
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -129,8 +151,7 @@
         </executions>
       </plugin>
       -->
-      
-      
+
     </plugins>
   </build>
 

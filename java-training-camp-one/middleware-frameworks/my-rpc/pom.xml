@@ -102,7 +102,7 @@
                                     <goal>shade</goal>
                                 </goals>
                                 <configuration>
-                                    <finalName>${artifactId}-provider</finalName>
+                                    <finalName>${project.artifactId}-provider</finalName>
                                     <shadedArtifactAttached>true</shadedArtifactAttached>
                                     <transformers>
                                         <transformer implementation=
@@ -131,7 +131,7 @@
                                     <goal>shade</goal>
                                 </goals>
                                 <configuration>
-                                    <finalName>${artifactId}-consumer</finalName>
+                                    <finalName>${project.artifactId}-consumer</finalName>
                                     <shadedArtifactAttached>true</shadedArtifactAttached>
                                     <transformers>
                                         <transformer implementation=
